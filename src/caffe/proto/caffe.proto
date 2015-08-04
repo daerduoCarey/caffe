@@ -57,6 +57,9 @@ message FillerParameter {
     AVERAGE = 2;
   }
   optional VarianceNorm variance_norm = 8 [default = FAN_IN];
+  
+  // added by Kaichun Mo
+  optional string file = 9;
 }
 
 message NetParameter {
@@ -223,6 +226,19 @@ message NetState {
   repeated string stage = 3;
 }
 
+// added by Kaichun Mo
+message SpatialTransformerParameter {
+
+	// How to use the parameter passed by localisation network
+	optional string transform_type = 1 [default = "affine"];
+	// What is the sampling technique
+	optional string sampler_type = 2 [default = "bilinear"];
+	
+	// If not set,stay same with the input dimension H and W
+	optional int32 output_H = 3;
+	optional int32 output_W = 4;
+}
+
 message NetStateRule {
   // Set phase to require the NetState have a particular phase (TRAIN or TEST)
   // to meet this rule.
@@ -351,6 +367,9 @@ message LayerParameter {
   optional TanHParameter tanh_param = 127;
   optional ThresholdParameter threshold_param = 128;
   optional WindowDataParameter window_data_param = 129;
+  
+  // added by Kaichun Mo
+  optional SpatialTransformerParameter st_param = 137;
 }
 
 // Message that stores parameters used to apply transformation

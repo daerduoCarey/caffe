@@ -1,0 +1,3 @@
+/Users/mokaichun/myDocuments/caffe/examples/images/cat.jpg 0
+/Users/mokaichun/myDocuments/caffe/examples/images/cat_gray.jpg 0
+/Users/mokaichun/myDocuments/caffe/examples/images/fish-bike.jpg 0
