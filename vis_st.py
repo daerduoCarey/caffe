@@ -7,18 +7,20 @@ import vis_utils as vu
 caffe_root = './'
 
 caffe.set_mode_cpu()
-net = caffe.Net(caffe_root + 'examples/mnist_st/lenet_st_imagedata.prototxt',
-		caffe_root + 'examples/mnist_st/lenet_st_imagedata_iter_4000.caffemodel', 
+net = caffe.Net(caffe_root + 'examples/mnist_st/lenet_conv_st.prototxt',
+		caffe_root + 'examples/mnist_st/lenet_st_iter_90000.caffemodel',
 		caffe.TEST)
 
+net.forward()
+net.forward()
 net.forward()
 
 n, c, h, w = net.blobs['data'].data.shape
 
 print net.blobs['data'].data.shape
 
-vu.visualize_three_channel_images(net.blobs['data'].data)
-vu.visualize_three_channel_images(net.blobs['st_output'].data)
+vu.visualize_one_channel_images(net.blobs['data'].data.reshape(n, h, w))
+vu.visualize_one_channel_images(net.blobs['st_output'].data.reshape(n, h, w))
 
 print net.blobs['theta'].data.reshape(n, 2, 3)
 

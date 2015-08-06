@@ -67,8 +67,8 @@ void SpatialTransformerLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bott
 
 	Dtype* data = output_grid->mutable_cpu_data();
 	for(int i=0; i<output_H_ * output_W_; ++i) {
-		data[3 * i] = (i / output_W_) * 1.0 / output_H_;
-		data[3 * i + 1] = (i % output_W_) * 1.0 / output_W_;
+		data[3 * i] = (i / output_W_) * 1.0 / output_H_ * 2 - 1;
+		data[3 * i + 1] = (i % output_W_) * 1.0 / output_W_ * 2 - 1;
 		data[3 * i + 2] = 1;
 	}
 
@@ -116,7 +116,7 @@ Dtype SpatialTransformerLayer<Dtype>::transform_forward_cpu(const Dtype* pic, Dt
 
 	Dtype res = (Dtype)0.;
 
-	Dtype x = px * H; Dtype y = py * W;
+	Dtype x = (px + 1) / 2 * H; Dtype y = (py + 1) / 2 * W;
 
 	if(debug) std::cout<<prefix<<"(x, y) = ("<<x<<", "<<y<<")"<<std::endl;
 
@@ -174,6 +174,7 @@ void SpatialTransformerLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bot
 	const Dtype* U = bottom[0]->cpu_data();
 	const Dtype* theta = bottom[1]->cpu_data();
 	const Dtype* output_grid_data = output_grid->cpu_data();
+
 	Dtype* input_grid_data = input_grid->mutable_cpu_data();
 	Dtype* V = top[0]->mutable_cpu_data();
 
@@ -222,7 +223,7 @@ void SpatialTransformerLayer<Dtype>::transform_backward_cpu(Dtype dV, const Dtyp
 
 	if(debug) std::cout<<prefix<<"Starting!"<<std::endl;
 
-	Dtype x = px * H; Dtype y = py * W;
+	Dtype x = (px + 1) / 2 * H; Dtype y = (py + 1) / 2 * W;
 	if(debug) std::cout<<prefix<<"(x, y) = ("<<x<<", "<<y<<")"<<std::endl;
 
 	int m, n; Dtype w;
@@ -237,21 +238,21 @@ void SpatialTransformerLayer<Dtype>::transform_backward_cpu(Dtype dV, const Dtyp
 
 		if(abs(x - m) < 1) {
 			if(m >= x) {
-				dpx += max(0, 1 - abs(y - n)) * U[m * W + n] * dV * H;
-				if(debug) std::cout<<prefix<<"dpx += "<<max(0, 1 - abs(y - n))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<H<<std::endl;
+				dpx += max(0, 1 - abs(y - n)) * U[m * W + n] * dV * H / 2;
+				if(debug) std::cout<<prefix<<"dpx += "<<max(0, 1 - abs(y - n))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<H / 2<<std::endl;
 			} else {
-				dpx -= max(0, 1 - abs(y - n)) * U[m * W + n] * dV * H;
-				if(debug) std::cout<<prefix<<"dpx -= "<<max(0, 1 - abs(y - n))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<H<<std::endl;
+				dpx -= max(0, 1 - abs(y - n)) * U[m * W + n] * dV * H / 2;
+				if(debug) std::cout<<prefix<<"dpx -= "<<max(0, 1 - abs(y - n))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<H / 2<<std::endl;
 			}
 		}
 
 		if(abs(y - n) < 1) {
 			if(n >= y) {
-				dpy += max(0, 1 - abs(x - m)) * U[m * W + n] * dV * W;
-				if(debug) std::cout<<prefix<<"dpy += "<<max(0, 1 - abs(x - m))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<W<<std::endl;
+				dpy += max(0, 1 - abs(x - m)) * U[m * W + n] * dV * W / 2;
+				if(debug) std::cout<<prefix<<"dpy += "<<max(0, 1 - abs(x - m))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<W / 2<<std::endl;
 			} else {
-				dpy -= max(0, 1 - abs(x - m)) * U[m * W + n] * dV * W;
-				if(debug) std::cout<<prefix<<"dpy -= "<<max(0, 1 - abs(x - m))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<W<<std::endl;
+				dpy -= max(0, 1 - abs(x - m)) * U[m * W + n] * dV * W / 2;
+				if(debug) std::cout<<prefix<<"dpy -= "<<max(0, 1 - abs(x - m))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<W / 2<<std::endl;
 			}
 		}
 	}
@@ -266,21 +267,21 @@ void SpatialTransformerLayer<Dtype>::transform_backward_cpu(Dtype dV, const Dtyp
 
 		if(abs(x - m) < 1) {
 			if(m >= x) {
-				dpx += max(0, 1 - abs(y - n)) * U[m * W + n] * dV * H;
-				if(debug) std::cout<<prefix<<"dpx += "<<max(0, 1 - abs(y - n))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<H<<std::endl;
+				dpx += max(0, 1 - abs(y - n)) * U[m * W + n] * dV * H / 2;
+				if(debug) std::cout<<prefix<<"dpx += "<<max(0, 1 - abs(y - n))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<H / 2<<std::endl;
 			} else {
-				dpx -= max(0, 1 - abs(y - n)) * U[m * W + n] * dV * H;
-				if(debug) std::cout<<prefix<<"dpx -= "<<max(0, 1 - abs(y - n))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<H<<std::endl;
+				dpx -= max(0, 1 - abs(y - n)) * U[m * W + n] * dV * H / 2;
+				if(debug) std::cout<<prefix<<"dpx -= "<<max(0, 1 - abs(y - n))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<H / 2<<std::endl;
 			}
 		}
 
 		if(abs(y - n) < 1) {
 			if(n >= y) {
-				dpy += max(0, 1 - abs(x - m)) * U[m * W + n] * dV * W;
-				if(debug) std::cout<<prefix<<"dpy += "<<max(0, 1 - abs(x - m))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<W<<std::endl;
+				dpy += max(0, 1 - abs(x - m)) * U[m * W + n] * dV * W / 2;
+				if(debug) std::cout<<prefix<<"dpy += "<<max(0, 1 - abs(x - m))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<W / 2<<std::endl;
 			} else {
-				dpy -= max(0, 1 - abs(x - m)) * U[m * W + n] * dV * W;
-				if(debug) std::cout<<prefix<<"dpy -= "<<max(0, 1 - abs(x - m))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<W<<std::endl;
+				dpy -= max(0, 1 - abs(x - m)) * U[m * W + n] * dV * W / 2;
+				if(debug) std::cout<<prefix<<"dpy -= "<<max(0, 1 - abs(x - m))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<W / 2<<std::endl;
 			}
 		}
 	}
@@ -295,21 +296,21 @@ void SpatialTransformerLayer<Dtype>::transform_backward_cpu(Dtype dV, const Dtyp
 
 		if(abs(x - m) < 1) {
 			if(m >= x) {
-				dpx += max(0, 1 - abs(y - n)) * U[m * W + n] * dV * H;
-				if(debug) std::cout<<prefix<<"dpx += "<<max(0, 1 - abs(y - n))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<H<<std::endl;
+				dpx += max(0, 1 - abs(y - n)) * U[m * W + n] * dV * H / 2;
+				if(debug) std::cout<<prefix<<"dpx += "<<max(0, 1 - abs(y - n))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<H / 2<<std::endl;
 			} else {
-				dpx -= max(0, 1 - abs(y - n)) * U[m * W + n] * dV * H;
-				if(debug) std::cout<<prefix<<"dpx -= "<<max(0, 1 - abs(y - n))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<H<<std::endl;
+				dpx -= max(0, 1 - abs(y - n)) * U[m * W + n] * dV * H / 2;
+				if(debug) std::cout<<prefix<<"dpx -= "<<max(0, 1 - abs(y - n))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<H / 2<<std::endl;
 			}
 		}
 
 		if(abs(y - n) < 1) {
 			if(n >= y) {
-				dpy += max(0, 1 - abs(x - m)) * U[m * W + n] * dV * W;
-				if(debug) std::cout<<prefix<<"dpy += "<<max(0, 1 - abs(x - m))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<W<<std::endl;
+				dpy += max(0, 1 - abs(x - m)) * U[m * W + n] * dV * W / 2;
+				if(debug) std::cout<<prefix<<"dpy += "<<max(0, 1 - abs(x - m))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<W / 2<<std::endl;
 			} else {
-				dpy -= max(0, 1 - abs(x - m)) * U[m * W + n] * dV * W;
-				if(debug) std::cout<<prefix<<"dpy -= "<<max(0, 1 - abs(x - m))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<W<<std::endl;
+				dpy -= max(0, 1 - abs(x - m)) * U[m * W + n] * dV * W / 2;
+				if(debug) std::cout<<prefix<<"dpy -= "<<max(0, 1 - abs(x - m))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<W / 2<<std::endl;
 			}
 		}
 	}
@@ -324,21 +325,21 @@ void SpatialTransformerLayer<Dtype>::transform_backward_cpu(Dtype dV, const Dtyp
 
 		if(abs(x - m) < 1) {
 			if(m >= x) {
-				dpx += max(0, 1 - abs(y - n)) * U[m * W + n] * dV * H;
-				if(debug) std::cout<<prefix<<"dpx += "<<max(0, 1 - abs(y - n))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<H<<std::endl;
+				dpx += max(0, 1 - abs(y - n)) * U[m * W + n] * dV * H / 2;
+				if(debug) std::cout<<prefix<<"dpx += "<<max(0, 1 - abs(y - n))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<H / 2<<std::endl;
 			} else {
-				dpx -= max(0, 1 - abs(y - n)) * U[m * W + n] * dV * H;
-				if(debug) std::cout<<prefix<<"dpx -= "<<max(0, 1 - abs(y - n))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<H<<std::endl;
+				dpx -= max(0, 1 - abs(y - n)) * U[m * W + n] * dV * H / 2;
+				if(debug) std::cout<<prefix<<"dpx -= "<<max(0, 1 - abs(y - n))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<H / 2<<std::endl;
 			}
 		}
 
 		if(abs(y - n) < 1) {
 			if(n >= y) {
-				dpy += max(0, 1 - abs(x - m)) * U[m * W + n] * dV * W;
-				if(debug) std::cout<<prefix<<"dpy += "<<max(0, 1 - abs(x - m))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<W<<std::endl;
+				dpy += max(0, 1 - abs(x - m)) * U[m * W + n] * dV * W / 2;
+				if(debug) std::cout<<prefix<<"dpy += "<<max(0, 1 - abs(x - m))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<W / 2<<std::endl;
 			} else {
-				dpy -= max(0, 1 - abs(x - m)) * U[m * W + n] * dV * W;
-				if(debug) std::cout<<prefix<<"dpy -= "<<max(0, 1 - abs(x - m))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<W<<std::endl;
+				dpy -= max(0, 1 - abs(x - m)) * U[m * W + n] * dV * W / 2;
+				if(debug) std::cout<<prefix<<"dpy -= "<<max(0, 1 - abs(x - m))<<" * "<<U[m * W + n]<<" * "<<dV<<" * "<<W / 2<<std::endl;
 			}
 		}
 	}
@@ -372,41 +373,35 @@ void SpatialTransformerLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& to
 			const Dtype* coordinates = input_grid_data + (output_H_ * output_W_ * 2) * i;
 			Dtype* coordinates_diff = input_grid_diff + (output_H_ * output_W_ * 2) * i;
 
-			int row_idx; Dtype px, py, dpx, dpy;
-
-			for(int j = 0; j < C; ++j)
-				for(int s = 0; s < output_H_; ++s)
-					for(int t = 0; t < output_W_; ++t) {
-
-						row_idx = output_W_ * s + t;
-
-						px = coordinates[row_idx * 2];
-						py = coordinates[row_idx * 2 + 1];
-
-						dpx = coordinates_diff[row_idx * 2];
-						dpy = coordinates_diff[row_idx * 2 + 1];
-
-						transform_backward_cpu(dV[top[0]->offset(i, j, s, t)], U + bottom[0]->offset(i, j, 0, 0),
-								px, py, dU + bottom[0]->offset(i, j, 0, 0), dpx, dpy);
-
-
-						coordinates_diff[row_idx * 2] = dpx;
-						coordinates_diff[row_idx * 2 + 1] = dpy;
-					}
+			int row_idx; Dtype px, py, dpx, dpy, delta_dpx, delta_dpy;
 
 			for(int s = 0; s < output_H_; ++s)
 				for(int t = 0; t < output_W_; ++t) {
 
 					row_idx = output_W_ * s + t;
 
+					px = coordinates[row_idx * 2];
+					py = coordinates[row_idx * 2 + 1];
+
+					for(int j = 0; j < C; ++j) {
+
+						delta_dpx = delta_dpy = (Dtype)0.;
+
+						transform_backward_cpu(dV[top[0]->offset(i, j, s, t)], U + bottom[0]->offset(i, j, 0, 0),
+								px, py, dU + bottom[0]->offset(i, j, 0, 0), delta_dpx, delta_dpy);
+
+						coordinates_diff[row_idx * 2] += delta_dpx;
+						coordinates_diff[row_idx * 2 + 1] += delta_dpy;
+					}
+
 					dpx = coordinates_diff[row_idx * 2];
 					dpy = coordinates_diff[row_idx * 2 + 1];
 
-					dTheta[6 * i] += dpx * (s * 1.0 / output_H_);
-					dTheta[6 * i + 1] += dpx * (t * 1.0 / output_W_);
+					dTheta[6 * i] += dpx * (s * 1.0 / output_H_ * 2 - 1);
+					dTheta[6 * i + 1] += dpx * (t * 1.0 / output_W_ * 2 - 1);
 					dTheta[6 * i + 2] += dpx;
-					dTheta[6 * i + 3] += dpy * (s * 1.0 / output_H_);
-					dTheta[6 * i + 4] += dpy * (t * 1.0 / output_W_);
+					dTheta[6 * i + 3] += dpy * (s * 1.0 / output_H_ * 2 - 1);
+					dTheta[6 * i + 4] += dpy * (t * 1.0 / output_W_ * 2 - 1);
 					dTheta[6 * i + 5] += dpy;
 				}
 		}

@@ -52,9 +52,9 @@ def st_forward(Theta, U, HH, WW):
 
 		for i in xrange(HH):
 			for j in xrange(WW):
-				vec = np.array([i*1.0/HH, j*1.0/WW, 1])
+				vec = np.array([i*1.0/HH*2-1, j*1.0/WW*2-1, 1])
 				sx, sy = np.dot(Theta[item], vec)
-				px[item, i, j], py[item, i, j] = sx * H, sy * W
+				px[item, i, j], py[item, i, j] = (sx+1)/2 * H, (sy+1)/2 * W
 
 		for c in xrange(C):
 			for i in xrange(HH):
@@ -177,12 +177,12 @@ def st_backward(dV, cache):
 
 		for i in xrange(HH):
 			for j in xrange(WW):
-				dTheta[item, 0, 0] += H * dpx[item, i, j] * (i*1.0/HH)
-				dTheta[item, 0, 1] += H * dpx[item, i, j] * (j*1.0/WW)
-				dTheta[item, 0, 2] += H * dpx[item, i, j]
-				dTheta[item, 1, 0] += W * dpy[item, i, j] * (i*1.0/HH)
-				dTheta[item, 1, 1] += W * dpy[item, i, j] * (j*1.0/WW)
-				dTheta[item, 1, 2] += W * dpy[item, i, j]
+				dTheta[item, 0, 0] += H/2 * dpx[item, i, j] * (i*1.0/HH*2-1)
+				dTheta[item, 0, 1] += H/2 * dpx[item, i, j] * (j*1.0/WW*2-1)
+				dTheta[item, 0, 2] += H/2 * dpx[item, i, j]
+				dTheta[item, 1, 0] += W/2 * dpy[item, i, j] * (i*1.0/HH*2-1)
+				dTheta[item, 1, 1] += W/2 * dpy[item, i, j] * (j*1.0/WW*2-1)
+				dTheta[item, 1, 2] += W/2 * dpy[item, i, j]
 
 
 	return dU, dTheta

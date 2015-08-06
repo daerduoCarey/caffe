@@ -89,68 +89,65 @@ TYPED_TEST(SpatialTransformerLayerTest, TestForwardAndBackward) {
   if (Caffe::mode() == Caffe::CPU ||
       sizeof(Dtype) == 4 || IS_VALID_CUDA) {
 
-	std::ofstream fout("image_log.txt");
-
 	// Setup and Forward
-	fout << "Setup and Forward" << std::endl << std::endl;
-
+	std::cout << "Setup and Forward" << std::endl << std::endl;
 	LayerParameter layer_param;
     shared_ptr<SpatialTransformerLayer<Dtype> > layer(
         new SpatialTransformerLayer<Dtype>(layer_param));
     layer->SetUp(this->blob_bottom_vec_, this->blob_top_vec_);
 
-    fout << "blob_U_->data:" << std::endl;
+    std::cout << "blob_U_->data:" << std::endl;
     for(int i=0; i<4; ++i) {
     	for(int j=0; j<4; ++j)
-    		fout << this->blob_U_->cpu_data()[4*i+j] << "\t";
-    	fout << std::endl;
+    		std::cout << this->blob_U_->cpu_data()[4*i+j] << "\t";
+    	std::cout << std::endl;
     }
 
-    fout << "blob_theta_->data:" << std::endl;
+    std::cout << "blob_theta_->data:" << std::endl;
     for(int i=0; i<2; ++i) {
     	for(int j=0; j<3; ++j)
-    		fout << this->blob_theta_->cpu_data()[3*i+j] << "\t";
-    	fout << std::endl;
+    		std::cout << this->blob_theta_->cpu_data()[3*i+j] << "\t";
+    	std::cout << std::endl;
     }
 
     layer->Forward(this->blob_bottom_vec_, this->blob_top_vec_);
 
-    fout << "blob_V_->data:" << std::endl;
+    std::cout << "blob_V_->data:" << std::endl;
     for(int i=0; i<4; ++i) {
     	for(int j=0; j<4; ++j)
-    		fout << this->blob_V_->cpu_data()[4*i+j] << "\t";
-    	fout << std::endl;
+    		std::cout << this->blob_V_->cpu_data()[4*i+j] << "\t";
+    	std::cout << std::endl;
     }
 
     // Give loss and Backward
-    fout << std::endl << "Give loss and Backward" << std::endl << std::endl;
+    std::cout << std::endl << "Give loss and Backward" << std::endl << std::endl;
 
     Dtype* diff = this->blob_V_->mutable_cpu_diff();
     for(int i=0; i<4; ++i)
     	for(int j=0; j<4; ++j)
     		diff[this->blob_V_->offset(0, 0, i, j)] = this->blob_V_->cpu_data()[this->blob_V_->offset(0, 0, i, j)];
 
-    fout << "blob_V_->diff:" << std::endl;
+    std::cout << "blob_V_->diff:" << std::endl;
     for(int i=0; i<4; ++i) {
     	for(int j=0; j<4; ++j)
-    		fout << this->blob_V_->cpu_diff()[4*i+j] << "\t";
-    	fout << std::endl;
+    		std::cout << this->blob_V_->cpu_diff()[4*i+j] << "\t";
+    	std::cout << std::endl;
     }
 
     layer->Backward(this->blob_top_vec_, vector<bool>(2, true), this->blob_bottom_vec_);
 
-    fout << "blob_theta_->diff:" << std::endl;
+    std::cout << "blob_theta_->diff:" << std::endl;
     for(int i=0; i<2; ++i) {
     	for(int j=0; j<3; ++j)
-    		fout << this->blob_theta_->cpu_diff()[3*i+j] << "\t";
-    	fout << std::endl;
+    		std::cout << this->blob_theta_->cpu_diff()[3*i+j] << "\t";
+    	std::cout << std::endl;
     }
 
-    fout << "blob_U_->diff:" << std::endl;
+    std::cout << "blob_U_->diff:" << std::endl;
     for(int i=0; i<4; ++i) {
     	for(int j=0; j<4; ++j)
-    		fout << this->blob_U_->cpu_diff()[4*i+j] << "\t";
-    	fout << std::endl;
+    		std::cout << this->blob_U_->cpu_diff()[4*i+j] << "\t";
+    	std::cout << std::endl;
     }
 
   } else {
@@ -168,7 +165,7 @@ TYPED_TEST(SpatialTransformerLayerTest, TestGradient) {
       sizeof(Dtype) == 4 || IS_VALID_CUDA) {
     LayerParameter layer_param;
     SpatialTransformerLayer<Dtype> layer(layer_param);
-    GradientChecker<Dtype> checker(1e-4, 0);
+    GradientChecker<Dtype> checker(1e-4, 1e-3);
     checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
         this->blob_top_vec_);
   } else {
