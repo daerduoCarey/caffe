@@ -11,7 +11,6 @@ def visualize_one_channel_images(X):
 
   plt.imshow(visualize_grid(img, padding=3).astype('uint8'))
   plt.gca().axis('off')
-  plt.show()
 
 def visualize_three_channel_images(X):
 
@@ -24,7 +23,6 @@ def visualize_three_channel_images(X):
 
   plt.imshow(visualize_grid(img, padding=3).astype('uint8'))
   plt.gca().axis('off')
-  plt.show()
 
 def visualize_grid(Xs, ubound=255.0, padding=1):
   """
