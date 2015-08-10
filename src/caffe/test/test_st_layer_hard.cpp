@@ -24,13 +24,17 @@ class SpatialTransformerLayerTest : public MultiDeviceTest<TypeParam> {
  protected:
   SpatialTransformerLayerTest()
  	 : blob_U_(new Blob<Dtype>(5, 3, 10, 10)),
- 	   blob_theta_(new Blob<Dtype>(5, 6)),
+ 	   blob_theta_(new Blob<Dtype>(5, 2, 3, 1)),
  	   blob_V_(new Blob<Dtype>(5, 3, 10, 10)){
 
 	  FillerParameter filler_param;
 	  GaussianFiller<Dtype> filler(filler_param);
 	  filler.Fill(this->blob_U_);
 	  filler.Fill(this->blob_theta_);
+
+	  vector<int> shape_theta;
+	  shape_theta[0] = 5; shape_theta[1] = 6;
+	  blob_theta_->Reshape(shape_theta);
 
 	  blob_bottom_vec_.push_back(blob_U_);
 	  blob_bottom_vec_.push_back(blob_theta_);
