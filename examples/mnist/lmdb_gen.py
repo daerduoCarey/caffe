@@ -45,9 +45,9 @@ def distortion(image):
 
 def main():
 
-	env = lmdb.open('mnist_test_lmdb', readonly=True)
+	env = lmdb.open('mnist_train_lmdb', readonly=True)
 	map_size = 100000000
-	env_out = lmdb.open('mnist_r_test_lmdb', map_size = map_size)
+	env_out = lmdb.open('mnist_r_train_lmdb', map_size = map_size)
 	count = 0
 	with env.begin() as txn:
 		cursor = txn.cursor()
@@ -58,7 +58,7 @@ def main():
 			image = distortion(image)
 			image = np.reshape(image, (h, w))
 			
-			sm.imsave('mnist_r_test_images/'+key+'.jpg', image)
+			sm.imsave('mnist_r_train_images/'+key+'.jpg', image)
 			
 			datum = caffe.proto.caffe_pb2.Datum()
 			datum.channels = 1

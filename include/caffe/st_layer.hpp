@@ -61,6 +61,9 @@ private:
 
 	bool global_debug;
 
+	Blob<Dtype>* dU_tmp;		// used for back propagation part in GPU implementation
+	Blob<Dtype>* dTheta_tmp;	// used for back propagation part in GPU implementation
+
 	Blob<Dtype>* output_grid;	// standard output coordinate system, [0, 1) by [0, 1).
 	Blob<Dtype>* input_grid;	// corresponding coordinate on input image after projection for each output pixel.
 };
