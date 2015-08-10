@@ -44,8 +44,8 @@ def main():
 	tot = 10
 
 	caffe.set_mode_cpu()
-	net = caffe.Net(caffe_root + 'examples/mnist_tests/ST_CNN_RST/ST_CNN.prototxt',
-			caffe_root + 'examples/mnist_tests/ST_CNN_RST/ST_CNN_iter_100000.caffemodel',
+	net = caffe.Net(caffe_root + 'examples/mnist_tests/ST_CNN/ST_CNN.prototxt',
+			caffe_root + 'examples/mnist_tests/ST_CNN/ST_CNN_iter_50000.caffemodel',
 			caffe.TEST)
 
 	for i in xrange(tot):

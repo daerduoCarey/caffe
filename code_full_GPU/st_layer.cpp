@@ -92,14 +92,55 @@ void SpatialTransformerLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
 
 	if(global_debug) std::cout<<prefix<<"Starting!"<<std::endl;
 
+	N = bottom[0]->shape(0);
+	C = bottom[0]->shape(1);
+	H = bottom[0]->shape(2);
+	W = bottom[0]->shape(3);
+
+	// reshape V
 	vector<int> shape(4);
 
-	shape[0] = bottom[0]->shape(0);
-	shape[1] = bottom[0]->shape(1);
+	shape[0] = N;
+	shape[1] = C;
 	shape[2] = output_H_;
 	shape[3] = output_W_;
 
 	top[0]->Reshape(shape);
+
+	// reshape dU_tmp
+	vector<int> dU_tmp_shape(5);
+
+	dU_tmp_shape[0] = N;
+	dU_tmp_shape[1] = C;
+	dU_tmp_shape[2] = H;
+	dU_tmp_shape[3] = W;
+	dU_tmp_shape[4] = output_H_ * output_W_;
+
+	dU_tmp = new Blob<Dtype>();
+	dU_tmp->Reshape(dU_tmp_shape);
+
+	// init all_ones_1
+	all_ones_1 = new Blob<Dtype>();
+	vector<int> all_ones_1_shape(1);
+	all_ones_1_shape[0] = output_H_ * output_W_;
+	all_ones_1->Reshape(all_ones_1_shape);
+
+	//reshape dTheta_tmp
+	vector<int> dTheta_tmp_shape(4);
+
+	dTheta_tmp_shape[0] = N;
+	dTheta_tmp_shape[1] = 2;
+	dTheta_tmp_shape[2] = 3;
+	dTheta_tmp_shape[3] = output_H_ * output_W_ * C;
+
+	dTheta_tmp = new Blob<Dtype>();
+	dTheta_tmp->Reshape(dTheta_tmp_shape);
+
+	// init all_ones_2
+	all_ones_2 = new Blob<Dtype>();
+	vector<int> all_ones_2_shape(1);
+	all_ones_2_shape[0] = output_H_ * output_W_ * C;
+	all_ones_2->Reshape(all_ones_2_shape);
 
 	if(global_debug) std::cout<<prefix<<"Finished."<<std::endl;
 }
@@ -180,11 +221,6 @@ void SpatialTransformerLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bot
 
 	caffe_set(input_grid->count(), (Dtype)0, input_grid_data);
 	caffe_set(top[0]->count(), (Dtype)0, V);
-
-	N = bottom[0]->shape(0);
-	C = bottom[0]->shape(1);
-	H = bottom[0]->shape(2);
-	W = bottom[0]->shape(3);
 
 	// for each input
 	for(int i = 0; i < N; ++i) {
