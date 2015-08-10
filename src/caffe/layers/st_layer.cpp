@@ -119,6 +119,12 @@ void SpatialTransformerLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
 	dU_tmp = new Blob<Dtype>();
 	dU_tmp->Reshape(dU_tmp_shape);
 
+	// init all_ones_1
+	all_ones_1 = new Blob<Dtype>();
+	vector<int> all_ones_1_shape(1);
+	all_ones_1_shape[0] = output_H_ * output_W_;
+	all_ones_1->Reshape(all_ones_1_shape);
+
 	//reshape dTheta_tmp
 	vector<int> dTheta_tmp_shape(4);
 
@@ -129,6 +135,12 @@ void SpatialTransformerLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
 
 	dTheta_tmp = new Blob<Dtype>();
 	dTheta_tmp->Reshape(dTheta_tmp_shape);
+
+	// init all_ones_2
+	all_ones_2 = new Blob<Dtype>();
+	vector<int> all_ones_2_shape(1);
+	all_ones_2_shape[0] = output_H_ * output_W_ * C;
+	all_ones_2->Reshape(all_ones_2_shape);
 
 	if(global_debug) std::cout<<prefix<<"Finished."<<std::endl;
 }

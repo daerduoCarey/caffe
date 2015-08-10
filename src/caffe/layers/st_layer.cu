@@ -255,20 +255,12 @@ void SpatialTransformerLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& to
 			CAFFE_CUDA_NUM_THREADS>>>(nthreads, C, output_H_, output_W_, H, W, input_grid_data,
 					dV, U, dU_tmp_diff, dTheta_tmp_diff);
 	
-	Blob<Dtype>* all_ones_1 = new Blob<Dtype>();
-	vector<int> all_ones_1_shape(1);
-	all_ones_1_shape[0] = output_H_ * output_W_;
-	all_ones_1->Reshape(all_ones_1_shape);
 	Dtype* all_ones_1_data = all_ones_1->mutable_gpu_data();
 	caffe_gpu_set(all_ones_1->count(), (Dtype)1., all_ones_1_data);
 	
 	caffe_gpu_gemm<Dtype>(CblasNoTrans, CblasNoTrans, bottom[0]->count(), 1, output_H_ * output_W_,
 			(Dtype)1., dU_tmp_diff, all_ones_1_data, (Dtype)0., dU);
 	
-	Blob<Dtype>* all_ones_2 = new Blob<Dtype>();
-	vector<int> all_ones_2_shape(1);
-	all_ones_2_shape[0] = output_H_ * output_W_ * C;
-	all_ones_2->Reshape(all_ones_2_shape);
 	Dtype* all_ones_2_data = all_ones_2->mutable_gpu_data();
 	caffe_gpu_set(all_ones_2->count(), (Dtype)1., all_ones_2_data);
 	
