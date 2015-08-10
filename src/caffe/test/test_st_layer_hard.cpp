@@ -19,10 +19,10 @@ extern cudaDeviceProp CAFFE_TEST_CUDA_PROP;
 #endif
 
 template <typename TypeParam>
-class SpatialTransformerLayerTest : public MultiDeviceTest<TypeParam> {
+class HardSpatialTransformerLayerTest : public MultiDeviceTest<TypeParam> {
   typedef typename TypeParam::Dtype Dtype;
  protected:
-  SpatialTransformerLayerTest()
+  HardSpatialTransformerLayerTest()
  	 : blob_U_(new Blob<Dtype>(5, 3, 10, 10)),
  	   blob_theta_(new Blob<Dtype>(5, 2, 3, 1)),
  	   blob_V_(new Blob<Dtype>(5, 3, 10, 10)){
@@ -40,7 +40,7 @@ class SpatialTransformerLayerTest : public MultiDeviceTest<TypeParam> {
 	  blob_bottom_vec_.push_back(blob_theta_);
 	  blob_top_vec_.push_back(blob_V_);
   }
-  virtual ~SpatialTransformerLayerTest() { delete blob_V_; delete blob_theta_; delete blob_U_; }
+  virtual ~HardSpatialTransformerLayerTest() { delete blob_V_; delete blob_theta_; delete blob_U_; }
   Blob<Dtype>* blob_U_;
   Blob<Dtype>* blob_theta_;
   Blob<Dtype>* blob_V_;
@@ -48,9 +48,9 @@ class SpatialTransformerLayerTest : public MultiDeviceTest<TypeParam> {
   vector<Blob<Dtype>*> blob_top_vec_;
 };
 
-TYPED_TEST_CASE(SpatialTransformerLayerTest, TestDtypesAndDevices);
+TYPED_TEST_CASE(HardSpatialTransformerLayerTest, TestDtypesAndDevices);
 
-TYPED_TEST(SpatialTransformerLayerTest, TestGradient) {
+TYPED_TEST(HardSpatialTransformerLayerTest, TestGradient) {
   typedef typename TypeParam::Dtype Dtype;
   bool IS_VALID_CUDA = false;
 #ifndef CPU_ONLY
