@@ -3,6 +3,7 @@
 #include "caffe/layer.hpp"
 #include "caffe/util/math_functions.hpp"
 #include "caffe/st_layer.hpp"
+#include "caffe/util/benchmark.hpp"
 
 namespace caffe {
 
@@ -37,25 +38,25 @@ __global__ void SpatialTransformerForwardGPU(const int nthreads, int N, int C,
 
 	  	m = floor(x); n = floor(y); w = 0;
 	  	if(m >= 0 && m < H && n >= 0 && n < W) {
-	  		w = fmaxf(0, 1 - abs(x - m)) * fmaxf(0, 1 - abs(y - n));
+	  		w = (1 - (x - m)) * (1 - (y - n));
 	  		V[V_offset] += w * pic[m * W + n];
 	  	}
 
 	  	m = floor(x) + 1; n = floor(y); w = 0;
 	  	if(m >= 0 && m < H && n >= 0 && n < W) {
-	  		w = fmaxf(0, 1 - abs(x - m)) * fmaxf(0, 1 - abs(y - n));
+	  		w = (1 - (m - x)) * (1 - (y - n));
 	  		V[V_offset] += w * pic[m * W + n];
 	  	}
 
 	  	m = floor(x); n = floor(y) + 1; w = 0;
 	  	if(m >= 0 && m < H && n >= 0 && n < W) {
-	  		w = fmaxf(0, 1 - abs(x - m)) * fmaxf(0, 1 - abs(y - n));
+	  		w = (1 - (x - m)) * (1 - (n - y));
 	  		V[V_offset] += w * pic[m * W + n];
 	  	}
 
 	  	m = floor(x) + 1; n = floor(y) + 1; w = 0;
 	  	if(m >= 0 && m < H && n >= 0 && n < W) {
-	  		w = fmaxf(0, 1 - abs(x - m)) * fmaxf(0, 1 - abs(y - n));
+	  		w = (1 - (m - x)) * (1 - (n - y));
 	  		V[V_offset] += w * pic[m * W + n];
 	  	}
   }
@@ -64,6 +65,8 @@ __global__ void SpatialTransformerForwardGPU(const int nthreads, int N, int C,
 template <typename Dtype>
 void SpatialTransformerLayer<Dtype>::Forward_gpu(
     const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
+
+	string prefix = "SpatialTransformerLayer::Forward_gpu::\t";
 
 	const Dtype* U = bottom[0]->gpu_data();
 	const Dtype* theta = bottom[1]->gpu_data();
@@ -84,9 +87,13 @@ void SpatialTransformerLayer<Dtype>::Forward_gpu(
 
 	const int nthreads = N * C * output_H_ * output_W_;
 
+	CPUTimer timer;
+	timer.Start();
+
 	SpatialTransformerForwardGPU<Dtype><<<CAFFE_GET_BLOCKS(nthreads),
 	      CAFFE_CUDA_NUM_THREADS>>>(nthreads, N, C, output_H_, output_W_, H, W, input_grid_data, U, V);
-
+	
+	std::cout << prefix << " Total time: " << timer.MicroSeconds() << std::endl;
 }
 
 template <typename Dtype>
@@ -125,101 +132,49 @@ __global__ void SpatialTransformerBackwardGPU(const int nthreads, int C,
 		// left-bottom neighbor
 		m = floor(x); n = floor(y); w = 0;
 		if(m >= 0 && m < H && n >= 0 && n < W) {
-			w = fmaxf(0, 1 - abs(x - m)) * fmaxf(0, 1 - abs(y - n));
+			w = (1 - (x - m)) * (1 - (y - n));
 
 			int tmp_offset = (dU_tmp_diff_offset + m * W + n) * (output_H_ * output_W_) + row_idx;
 			dU_tmp_diff[tmp_offset] += w * dV;
-
-			if(abs(x - m) < 1) {
-				if(m >= x) {
-					delta_dpx += fmaxf(0, 1 - abs(y - n)) * U[m * W + n] * dV * H / 2;
-				} else {
-					delta_dpx -= fmaxf(0, 1 - abs(y - n)) * U[m * W + n] * dV * H / 2;
-				}
-			}
-
-			if(abs(y - n) < 1) {
-				if(n >= y) {
-					delta_dpy += fmaxf(0, 1 - abs(x - m)) * U[m * W + n] * dV * W / 2;
-				} else {
-					delta_dpy -= fmaxf(0, 1 - abs(x - m)) * U[m * W + n] * dV * W / 2;
-				}
-			}
+			
+			delta_dpx -= (1 - (y - n)) * U[m * W + n] * dV * H / 2;
+			delta_dpy -= (1 - (x - m)) * U[m * W + n] * dV * W / 2;
 		}
 		
 		// left-top neighbor
 		m = floor(x); n = floor(y) + 1; w = 0;
 		if(m >= 0 && m < H && n >= 0 && n < W) {
-			w = fmaxf(0, 1 - abs(x - m)) * fmaxf(0, 1 - abs(y - n));
+			w = (1 - (x - m)) * (1 - (n - y));
 
 			int tmp_offset = (dU_tmp_diff_offset + m * W + n) * (output_H_ * output_W_) + row_idx;
 			dU_tmp_diff[tmp_offset] += w * dV;
-
-			if(abs(x - m) < 1) {
-				if(m >= x) {
-					delta_dpx += fmaxf(0, 1 - abs(y - n)) * U[m * W + n] * dV * H / 2;
-				} else {
-					delta_dpx -= fmaxf(0, 1 - abs(y - n)) * U[m * W + n] * dV * H / 2;
-				}
-			}
-
-			if(abs(y - n) < 1) {
-				if(n >= y) {
-					delta_dpy += fmaxf(0, 1 - abs(x - m)) * U[m * W + n] * dV * W / 2;
-				} else {
-					delta_dpy -= fmaxf(0, 1 - abs(x - m)) * U[m * W + n] * dV * W / 2;
-				}
-			}
+		
+			delta_dpx -= (1 - (n - y)) * U[m * W + n] * dV * H / 2;
+			delta_dpy += (1 - (x - m)) * U[m * W + n] * dV * W / 2;
 		}
 
 		// right-bottom neighbor
 		m = floor(x) + 1; n = floor(y); w = 0;
 		if(m >= 0 && m < H && n >= 0 && n < W) {
-			w = fmaxf(0, 1 - abs(x - m)) * fmaxf(0, 1 - abs(y - n));
+			w = (1 - (m - x)) * (1 - (y - n));
 
 			int tmp_offset = (dU_tmp_diff_offset + m * W + n) * (output_H_ * output_W_) + row_idx;
 			dU_tmp_diff[tmp_offset] += w * dV;
-
-			if(abs(x - m) < 1) {
-				if(m >= x) {
-					delta_dpx += fmaxf(0, 1 - abs(y - n)) * U[m * W + n] * dV * H / 2;
-				} else {
-					delta_dpx -= fmaxf(0, 1 - abs(y - n)) * U[m * W + n] * dV * H / 2;
-				}
-			}
-
-			if(abs(y - n) < 1) {
-				if(n >= y) {
-					delta_dpy += fmaxf(0, 1 - abs(x - m)) * U[m * W + n] * dV * W / 2;
-				} else {
-					delta_dpy -= fmaxf(0, 1 - abs(x - m)) * U[m * W + n] * dV * W / 2;
-				}
-			}
+		
+			delta_dpx += (1 - (y - n)) * U[m * W + n] * dV * H / 2;
+			delta_dpy -= (1 - (m - x)) * U[m * W + n] * dV * W / 2;
 		}
 		
 		// right-top neighbor
 		m = floor(x) + 1; n = floor(y) + 1; w = 0;
 		if(m >= 0 && m < H && n >= 0 && n < W) {
-			w = fmaxf(0, 1 - abs(x - m)) * fmaxf(0, 1 - abs(y - n));
+			w = (1 - (m - x)) * (1 - (n - y));
 
 			int tmp_offset = (dU_tmp_diff_offset + m * W + n) * (output_H_ * output_W_) + row_idx;
 			dU_tmp_diff[tmp_offset] += w * dV;
 
-			if(abs(x - m) < 1) {
-				if(m >= x) {
-					delta_dpx += fmaxf(0, 1 - abs(y - n)) * U[m * W + n] * dV * H / 2;
-				} else {
-					delta_dpx -= fmaxf(0, 1 - abs(y - n)) * U[m * W + n] * dV * H / 2;
-				}
-			}
-
-			if(abs(y - n) < 1) {
-				if(n >= y) {
-					delta_dpy += fmaxf(0, 1 - abs(x - m)) * U[m * W + n] * dV * W / 2;
-				} else {
-					delta_dpy -= fmaxf(0, 1 - abs(x - m)) * U[m * W + n] * dV * W / 2;
-				}
-			}
+			delta_dpx += (1 - (n - y)) * U[m * W + n] * dV * H / 2;
+			delta_dpy += (1 - (m - x)) * U[m * W + n] * dV * W / 2;
 		}
 		
 		int idx = j * (output_H_ * output_W_) + s * output_W_ + t;
@@ -237,6 +192,8 @@ template <typename Dtype>
 void SpatialTransformerLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
     const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom) {
 
+	string prefix = "SpatialTransformerLayer::Backward_GPU::\t";
+
 	const Dtype* dV = top[0]->gpu_diff();
 	const Dtype* input_grid_data = input_grid->gpu_data();
 	const Dtype* U = bottom[0]->gpu_data();
@@ -251,21 +208,32 @@ void SpatialTransformerLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& to
 
 	const int nthreads = N * C * output_H_ * output_W_;
 
+	CPUTimer timer;
+	timer.Start();
 	SpatialTransformerBackwardGPU<Dtype><<<CAFFE_GET_BLOCKS(nthreads),
 			CAFFE_CUDA_NUM_THREADS>>>(nthreads, C, output_H_, output_W_, H, W, input_grid_data,
 					dV, U, dU_tmp_diff, dTheta_tmp_diff);
-	
+	std::cout << prefix << "Computing temp value time: " << timer.MicroSeconds() << std::endl;
+
+	timer.Start();
 	Dtype* all_ones_1_data = all_ones_1->mutable_gpu_data();
 	caffe_gpu_set(all_ones_1->count(), (Dtype)1., all_ones_1_data);
-
+	std::cout << prefix << "Setting all_ones_1: " << timer.MicroSeconds() << std::endl;
+	
+	timer.Start();
 	caffe_gpu_gemm<Dtype>(CblasNoTrans, CblasNoTrans, bottom[0]->count(), 1, output_H_ * output_W_,
 			(Dtype)1., dU_tmp_diff, all_ones_1_data, (Dtype)0., dU);
+	std::cout << prefix << "Computing dU: " << timer.MicroSeconds() << std::endl;
 	
+	timer.Start();
 	Dtype* all_ones_2_data = all_ones_2->mutable_gpu_data();
 	caffe_gpu_set(all_ones_2->count(), (Dtype)1., all_ones_2_data);
+	std::cout << prefix << "Setting all_ones_2: " << timer.MicroSeconds() << std::endl;
 	
+	timer.Start();
 	caffe_gpu_gemm<Dtype>(CblasNoTrans, CblasNoTrans, bottom[1]->count(), 1, output_H_ * output_W_ * C, 
 			(Dtype)1., dTheta_tmp_diff, all_ones_2_data, (Dtype)0., dTheta);
+	std::cout << prefix << "Computing dTheta: " << timer.MicroSeconds() << std::endl;
 }
 
 INSTANTIATE_LAYER_GPU_FUNCS(SpatialTransformerLayer);

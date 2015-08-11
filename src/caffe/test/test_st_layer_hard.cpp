@@ -23,17 +23,17 @@ class HardSpatialTransformerLayerTest : public MultiDeviceTest<TypeParam> {
   typedef typename TypeParam::Dtype Dtype;
  protected:
   HardSpatialTransformerLayerTest()
- 	 : blob_U_(new Blob<Dtype>(5, 3, 10, 10)),
- 	   blob_theta_(new Blob<Dtype>(5, 2, 3, 1)),
- 	   blob_V_(new Blob<Dtype>(5, 3, 10, 10)){
+ 	 : blob_U_(new Blob<Dtype>(2, 3, 10, 10)),
+ 	   blob_theta_(new Blob<Dtype>(2, 2, 3, 1)),
+ 	   blob_V_(new Blob<Dtype>(2, 3, 10, 10)) {
 
 	  FillerParameter filler_param;
 	  GaussianFiller<Dtype> filler(filler_param);
 	  filler.Fill(this->blob_U_);
 	  filler.Fill(this->blob_theta_);
 
-	  vector<int> shape_theta;
-	  shape_theta[0] = 5; shape_theta[1] = 6;
+	  vector<int> shape_theta(2);
+	  shape_theta[0] = 2; shape_theta[1] = 6;
 	  blob_theta_->Reshape(shape_theta);
 
 	  blob_bottom_vec_.push_back(blob_U_);
@@ -60,7 +60,7 @@ TYPED_TEST(HardSpatialTransformerLayerTest, TestGradient) {
       sizeof(Dtype) == 4 || IS_VALID_CUDA) {
     LayerParameter layer_param;
     SpatialTransformerLayer<Dtype> layer(layer_param);
-    GradientChecker<Dtype> checker(1e-4, 1e-3);
+    GradientChecker<Dtype> checker(1e-4, 1e-2);
     checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
         this->blob_top_vec_);
   } else {

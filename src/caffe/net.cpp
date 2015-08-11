@@ -16,6 +16,8 @@
 
 #include "caffe/test/test_caffe_main.hpp"
 
+#include "caffe/util/benchmark.hpp"
+
 namespace caffe {
 
 template <typename Dtype>
@@ -503,10 +505,13 @@ Dtype Net<Dtype>::ForwardFromTo(int start, int end) {
       InputDebugInfo(i);
     }
   }
+  CPUTimer timer;
   for (int i = start; i <= end; ++i) {
     // LOG(ERROR) << "Forwarding " << layer_names_[i];
+    timer.Start();
     Dtype layer_loss = layers_[i]->Forward(bottom_vecs_[i], top_vecs_[i]);
     loss += layer_loss;
+    std::cout << "Net::ForwardFromTo::\t" << "Forwarding Layer: " << layer_names_[i] << ", time spent: " << timer.MicroSeconds() << std::endl;
     if (debug_info_) { ForwardDebugInfo(i); }
   }
   return loss;
@@ -567,12 +572,15 @@ template <typename Dtype>
 void Net<Dtype>::BackwardFromTo(int start, int end) {
   CHECK_GE(end, 0);
   CHECK_LT(start, layers_.size());
+  CPUTimer timer;
   for (int i = start; i >= end; --i) {
+    timer.Start();
     if (layer_need_backward_[i]) {
       layers_[i]->Backward(
           top_vecs_[i], bottom_need_backward_[i], bottom_vecs_[i]);
       if (debug_info_) { BackwardDebugInfo(i); }
     }
+    std::cout << "Net::BackwardFromTo::\t" << "Backwarding Layer: " << layer_names_[i] << ", time spent: " << timer.MicroSeconds() << std::endl;
   }
 }
 

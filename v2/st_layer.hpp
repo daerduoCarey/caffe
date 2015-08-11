@@ -19,7 +19,7 @@ class SpatialTransformerLayer : public Layer<Dtype> {
 
 public:
 	explicit SpatialTransformerLayer(const LayerParameter& param)
-      : Layer<Dtype>(param), global_debug(true) {}
+      : Layer<Dtype>(param), global_debug(false) {}
 	virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 	virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
@@ -59,11 +59,15 @@ private:
 
 	int N, C, H, W;
 
-	Blob<Dtype>* input_grid;	// Store the projected coordinates on input map 
-					// for all output pixels when forwarding
-	Blob<Dtype>* output_grid;	// Only used in CPU version
-
 	bool global_debug;
+
+	Blob<Dtype>* dU_tmp;		// used for back propagation part in GPU implementation
+	Blob<Dtype>* dTheta_tmp;	// used for back propagation part in GPU implementation
+	Blob<Dtype>* all_ones_1;	// used for back propagation part in GPU implementation
+	Blob<Dtype>* all_ones_2;	// used for back propagation part in GPU implementation
+
+	Blob<Dtype>* output_grid;	// standard output coordinate system, [0, 1) by [0, 1).
+	Blob<Dtype>* input_grid;	// corresponding coordinate on input image after projection for each output pixel.
 };
 
 }  // namespace caffe

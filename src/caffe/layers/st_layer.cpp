@@ -10,6 +10,7 @@
 #include "caffe/common.hpp"
 #include "caffe/st_layer.hpp"
 #include "caffe/util/math_functions.hpp"
+#include "caffe/util/benchmark.hpp"
 
 namespace caffe {
 
@@ -88,20 +89,28 @@ template <typename Dtype>
 void SpatialTransformerLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {
 
+	CPUTimer timer;
+	timer.Start();
+	
 	string prefix = "\t\tSpatial Transformer Layer:: Reshape: \t";
 
 	if(global_debug) std::cout<<prefix<<"Starting!"<<std::endl;
 
 	vector<int> shape(4);
 
-	shape[0] = bottom[0]->shape(0);
-	shape[1] = bottom[0]->shape(1);
+	N = bottom[0]->shape(0);
+	C = bottom[0]->shape(1);
+	H = bottom[0]->shape(2);
+	W = bottom[0]->shape(3);
+
+	shape[0] = N;
+	shape[1] = C;
 	shape[2] = output_H_;
 	shape[3] = output_W_;
 
 	top[0]->Reshape(shape);
 
-	if(global_debug) std::cout<<prefix<<"Finished."<<std::endl;
+	if(global_debug) std::cout<<prefix<<"Finished.\t time: "<<timer.MicroSeconds()<<std::endl;
 }
 
 template <typename Dtype>
@@ -180,11 +189,6 @@ void SpatialTransformerLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bot
 
 	caffe_set(input_grid->count(), (Dtype)0, input_grid_data);
 	caffe_set(top[0]->count(), (Dtype)0, V);
-
-	N = bottom[0]->shape(0);
-	C = bottom[0]->shape(1);
-	H = bottom[0]->shape(2);
-	W = bottom[0]->shape(3);
 
 	// for each input
 	for(int i = 0; i < N; ++i) {

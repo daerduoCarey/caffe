@@ -77,8 +77,10 @@ class Net {
 
   Dtype ForwardBackward(const vector<Blob<Dtype>* > & bottom) {
     Dtype loss;
+    std::cout << "Net::ForwardBackward::Start!\t" << std::endl;
     Forward(bottom, &loss);
     Backward();
+    std::cout << "Net::ForwardBackward::Finish.\t" << std::endl;
     return loss;
   }
 

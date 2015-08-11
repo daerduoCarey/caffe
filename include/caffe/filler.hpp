@@ -219,7 +219,7 @@ class FileFiller : public Filler<Dtype> {
       : Filler<Dtype>(param) {}
   virtual void Fill(Blob<Dtype>* blob) {
 	  CHECK(this->filler_param_.has_file());
-	  std::ifstream file(this->filler_param_.file());
+	  std::ifstream file(this->filler_param_.file().c_str());
 	  Dtype* data = blob->mutable_cpu_data();
 	  int count = blob->count();
 	  Dtype temp;
