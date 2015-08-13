@@ -10,6 +10,7 @@
 #include "caffe/common.hpp"
 #include "caffe/st_layer.hpp"
 #include "caffe/util/math_functions.hpp"
+#include "caffe/util/benchmark.hpp"
 
 namespace caffe {
 
@@ -81,12 +82,6 @@ void SpatialTransformerLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bott
 	input_grid = new Blob<Dtype>();
 	input_grid->Reshape(shape_input);
 
-	// initalize the blobs used for back propagation when using GPU code
-	all_ones_1 = new Blob<Dtype>();
-	all_ones_2 = new Blob<Dtype>();
-	dU_tmp = new Blob<Dtype>();
-	dTheta_tmp = new Blob<Dtype>();
-
 	std::cout<<prefix<<"Initialization finished."<<std::endl;
 }
 
@@ -94,17 +89,19 @@ template <typename Dtype>
 void SpatialTransformerLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {
 
+	CPUTimer timer;
+	timer.Start();
+	
 	string prefix = "\t\tSpatial Transformer Layer:: Reshape: \t";
 
 	if(global_debug) std::cout<<prefix<<"Starting!"<<std::endl;
+
+	vector<int> shape(4);
 
 	N = bottom[0]->shape(0);
 	C = bottom[0]->shape(1);
 	H = bottom[0]->shape(2);
 	W = bottom[0]->shape(3);
-
-	// reshape V
-	vector<int> shape(4);
 
 	shape[0] = N;
 	shape[1] = C;
@@ -113,38 +110,7 @@ void SpatialTransformerLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
 
 	top[0]->Reshape(shape);
 
-	// reshape dU_tmp
-	vector<int> dU_tmp_shape(5);
-
-	dU_tmp_shape[0] = N;
-	dU_tmp_shape[1] = C;
-	dU_tmp_shape[2] = H;
-	dU_tmp_shape[3] = W;
-	dU_tmp_shape[4] = output_H_ * output_W_;
-
-	dU_tmp->Reshape(dU_tmp_shape);
-
-	// init all_ones_1
-	vector<int> all_ones_1_shape(1);
-	all_ones_1_shape[0] = output_H_ * output_W_;
-	all_ones_1->Reshape(all_ones_1_shape);
-
-	//reshape dTheta_tmp
-	vector<int> dTheta_tmp_shape(4);
-
-	dTheta_tmp_shape[0] = N;
-	dTheta_tmp_shape[1] = 2;
-	dTheta_tmp_shape[2] = 3;
-	dTheta_tmp_shape[3] = output_H_ * output_W_ * C;
-
-	dTheta_tmp->Reshape(dTheta_tmp_shape);
-
-	// init all_ones_2
-	vector<int> all_ones_2_shape(1);
-	all_ones_2_shape[0] = output_H_ * output_W_ * C;
-	all_ones_2->Reshape(all_ones_2_shape);
-
-	if(global_debug) std::cout<<prefix<<"Finished."<<std::endl;
+	if(global_debug) std::cout<<prefix<<"Finished.\t time: "<<timer.MicroSeconds()<<std::endl;
 }
 
 template <typename Dtype>
