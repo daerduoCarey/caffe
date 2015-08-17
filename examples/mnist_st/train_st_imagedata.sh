@@ -1,3 +1,0 @@
-#!/usr/bin/env sh
-
-./build/tools/caffe train --solver=examples/mnist_st/lenet_st_imagedata_solver.prototxt

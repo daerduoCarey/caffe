@@ -1,3 +1,0 @@
-/Users/mokaichun/myDocuments/caffe/examples/images/cat.jpg
-/Users/mokaichun/myDocuments/caffe/examples/images/cat_gray.jpg
-/Users/mokaichun/myDocuments/caffe/examples/images/fish-bike.jpg
