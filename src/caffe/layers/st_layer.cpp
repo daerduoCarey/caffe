@@ -10,7 +10,6 @@
 #include "caffe/common.hpp"
 #include "caffe/st_layer.hpp"
 #include "caffe/util/math_functions.hpp"
-#include "caffe/util/benchmark.hpp"
 
 namespace caffe {
 
@@ -62,11 +61,9 @@ void SpatialTransformerLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bott
 
 	vector<int> shape_output(2);
 	shape_output[0] = output_H_ * output_W_; shape_output[1] = 3;
+	output_grid.Reshape(shape_output);
 
-	output_grid = new Blob<Dtype>();
-	output_grid->Reshape(shape_output);
-
-	Dtype* data = output_grid->mutable_cpu_data();
+	Dtype* data = output_grid.mutable_cpu_data();
 	for(int i=0; i<output_H_ * output_W_; ++i) {
 		data[3 * i] = (i / output_W_) * 1.0 / output_H_ * 2 - 1;
 		data[3 * i + 1] = (i % output_W_) * 1.0 / output_W_ * 2 - 1;
@@ -78,9 +75,7 @@ void SpatialTransformerLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bott
 
 	vector<int> shape_input(3);
 	shape_input[0] = bottom[1]->shape(0); shape_input[1] = output_H_ * output_W_; shape_input[2] = 2;
-
-	input_grid = new Blob<Dtype>();
-	input_grid->Reshape(shape_input);
+	input_grid.Reshape(shape_input);
 
 	std::cout<<prefix<<"Initialization finished."<<std::endl;
 }
@@ -89,19 +84,17 @@ template <typename Dtype>
 void SpatialTransformerLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {
 
-	CPUTimer timer;
-	timer.Start();
-	
 	string prefix = "\t\tSpatial Transformer Layer:: Reshape: \t";
 
 	if(global_debug) std::cout<<prefix<<"Starting!"<<std::endl;
-
-	vector<int> shape(4);
 
 	N = bottom[0]->shape(0);
 	C = bottom[0]->shape(1);
 	H = bottom[0]->shape(2);
 	W = bottom[0]->shape(3);
+
+	// reshape V
+	vector<int> shape(4);
 
 	shape[0] = N;
 	shape[1] = C;
@@ -110,7 +103,22 @@ void SpatialTransformerLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
 
 	top[0]->Reshape(shape);
 
-	if(global_debug) std::cout<<prefix<<"Finished.\t time: "<<timer.MicroSeconds()<<std::endl;
+	//reshape dTheta_tmp
+	vector<int> dTheta_tmp_shape(4);
+
+	dTheta_tmp_shape[0] = N;
+	dTheta_tmp_shape[1] = 2;
+	dTheta_tmp_shape[2] = 3;
+	dTheta_tmp_shape[3] = output_H_ * output_W_ * C;
+
+	dTheta_tmp.Reshape(dTheta_tmp_shape);
+
+	// init all_ones_2
+	vector<int> all_ones_2_shape(1);
+	all_ones_2_shape[0] = output_H_ * output_W_ * C;
+	all_ones_2.Reshape(all_ones_2_shape);
+
+	if(global_debug) std::cout<<prefix<<"Finished."<<std::endl;
 }
 
 template <typename Dtype>
@@ -182,12 +190,12 @@ void SpatialTransformerLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bot
 
 	const Dtype* U = bottom[0]->cpu_data();
 	const Dtype* theta = bottom[1]->cpu_data();
-	const Dtype* output_grid_data = output_grid->cpu_data();
+	const Dtype* output_grid_data = output_grid.cpu_data();
 
-	Dtype* input_grid_data = input_grid->mutable_cpu_data();
+	Dtype* input_grid_data = input_grid.mutable_cpu_data();
 	Dtype* V = top[0]->mutable_cpu_data();
 
-	caffe_set(input_grid->count(), (Dtype)0, input_grid_data);
+	caffe_set(input_grid.count(), (Dtype)0, input_grid_data);
 	caffe_set(top[0]->count(), (Dtype)0, V);
 
 	// for each input
@@ -361,16 +369,16 @@ void SpatialTransformerLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& to
 		if(global_debug) std::cout<<prefix<<"Starting!"<<std::endl;
 
 		const Dtype* dV = top[0]->cpu_diff();
-		const Dtype* input_grid_data = input_grid->cpu_data();
+		const Dtype* input_grid_data = input_grid.cpu_data();
 		const Dtype* U = bottom[0]->cpu_data();
 
 		Dtype* dU = bottom[0]->mutable_cpu_diff();
 		Dtype* dTheta = bottom[1]->mutable_cpu_diff();
-		Dtype* input_grid_diff = input_grid->mutable_cpu_diff();
+		Dtype* input_grid_diff = input_grid.mutable_cpu_diff();
 
 		caffe_set(bottom[0]->count(), (Dtype)0, dU);
 		caffe_set(bottom[1]->count(), (Dtype)0, dTheta);
-		caffe_set(input_grid->count(), (Dtype)0, input_grid_diff);
+		caffe_set(input_grid.count(), (Dtype)0, input_grid_diff);
 
 		for(int i = 0; i < N; ++i) {
 

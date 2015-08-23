@@ -2405,7 +2405,7 @@ layer {
   }
 }
 layer {
-  name: "loss3/loss3"
+  name: "cub/loss3/loss3"
   type: "SoftmaxWithLoss"
   bottom: "loss3/classifier"
   bottom: "label"
@@ -2413,24 +2413,18 @@ layer {
   loss_weight: 1
 }
 layer {
-  name: "loss3/top-1"
+  name: "cub/loss3/top-1"
   type: "Accuracy"
   bottom: "loss3/classifier"
   bottom: "label"
   top: "loss3/top-1"
-  include {
-    phase: TEST
-  }
 }
 layer {
-  name: "loss3/top-5"
+  name: "cub/loss3/top-5"
   type: "Accuracy"
   bottom: "loss3/classifier"
   bottom: "label"
   top: "loss3/top-5"
-  include {
-    phase: TEST
-  }
   accuracy_param {
     top_k: 5
   }

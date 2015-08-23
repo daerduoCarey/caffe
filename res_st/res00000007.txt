@@ -1,0 +1,2 @@
+Digit at (1, 7) should be 0, but is classified as 8
+Digit at (8, 6) should be 6, but is classified as 0

@@ -1,0 +1,6 @@
+Bird at (0, 2) should be 135, but is classified as 103
+Bird at (1, 1) should be 190, but is classified as 187
+Bird at (1, 2) should be 153, but is classified as 155
+Bird at (2, 2) should be 115, but is classified as 131
+Bird at (3, 0) should be 135, but is classified as 40
+Bird at (3, 1) should be 150, but is classified as 128

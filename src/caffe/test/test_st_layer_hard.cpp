@@ -12,6 +12,8 @@
 #include "caffe/test/test_caffe_main.hpp"
 #include "caffe/test/test_gradient_check_util.hpp"
 
+#include "fstream"
+
 namespace caffe {
 
 #ifndef CPU_ONLY
@@ -23,9 +25,9 @@ class HardSpatialTransformerLayerTest : public MultiDeviceTest<TypeParam> {
   typedef typename TypeParam::Dtype Dtype;
  protected:
   HardSpatialTransformerLayerTest()
- 	 : blob_U_(new Blob<Dtype>(2, 3, 10, 10)),
- 	   blob_theta_(new Blob<Dtype>(2, 2, 3, 1)),
- 	   blob_V_(new Blob<Dtype>(2, 3, 10, 10)) {
+ 	 : blob_U_(new Blob<Dtype>(5, 3, 15, 15)),
+ 	   blob_theta_(new Blob<Dtype>(5, 2, 3, 1)),
+ 	   blob_V_(new Blob<Dtype>(5, 3, 15, 15)) {
 
 	  FillerParameter filler_param;
 	  GaussianFiller<Dtype> filler(filler_param);
@@ -33,7 +35,7 @@ class HardSpatialTransformerLayerTest : public MultiDeviceTest<TypeParam> {
 	  filler.Fill(this->blob_theta_);
 
 	  vector<int> shape_theta(2);
-	  shape_theta[0] = 2; shape_theta[1] = 6;
+	  shape_theta[0] = 5; shape_theta[1] = 6;
 	  blob_theta_->Reshape(shape_theta);
 
 	  blob_bottom_vec_.push_back(blob_U_);
@@ -48,7 +50,7 @@ class HardSpatialTransformerLayerTest : public MultiDeviceTest<TypeParam> {
   vector<Blob<Dtype>*> blob_top_vec_;
 };
 
-TYPED_TEST_CASE(HardSpatialTransformerLayerTest, TestDtypesAndDevices);
+TYPED_TEST_CASE(HardSpatialTransformerLayerTest, TestGPUAndDouble);
 
 TYPED_TEST(HardSpatialTransformerLayerTest, TestGradient) {
   typedef typename TypeParam::Dtype Dtype;
@@ -60,7 +62,7 @@ TYPED_TEST(HardSpatialTransformerLayerTest, TestGradient) {
       sizeof(Dtype) == 4 || IS_VALID_CUDA) {
     LayerParameter layer_param;
     SpatialTransformerLayer<Dtype> layer(layer_param);
-    GradientChecker<Dtype> checker(1e-4, 1e-2);
+    GradientChecker<Dtype> checker(1e-6, 1e-3);
     checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
         this->blob_top_vec_);
   } else {

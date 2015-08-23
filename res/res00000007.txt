@@ -1,0 +1,2 @@
+Bird at (1, 2) should be 31, but is classified as 33
+Bird at (2, 3) should be 29, but is classified as 107

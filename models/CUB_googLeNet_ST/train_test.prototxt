@@ -16,7 +16,7 @@ layer {
   }
   image_data_param {
     source: "data/CUB_200_2011/train_files.txt"
-    batch_size: 32
+    batch_size: 16
     shuffle: true
     new_height: 256
     new_width: 256
@@ -39,7 +39,7 @@ layer {
   }
   image_data_param {
     source: "data/CUB_200_2011/test_files.txt"
-    batch_size: 32
+    batch_size: 16
     shuffle: true
     new_height: 256
     new_width: 256
@@ -2136,12 +2136,6 @@ layer {
   type: "InnerProduct"
   bottom: "st/final_ip"
   top: "st/theta_1"
-  param {
-    lr_mult: 0
-  }
-  param {
-    lr_mult: 0
-  }
   inner_product_param {
     num_output: 6
     weight_filler {
@@ -2165,12 +2159,6 @@ layer {
   type: "InnerProduct"
   bottom: "st/final_ip"
   top: "st/theta_2"
-  param {
-    lr_mult: 0
-  }
-  param {
-    lr_mult: 0
-  }
   inner_product_param {
     num_output: 6
     weight_filler {
@@ -6309,12 +6297,6 @@ layer {
   type: "InnerProduct"
   bottom: "final/concat/output"
   top: "final/res"
-  param {
-    lr_mult: 10
-  }
-  param {
-    lr_mult: 10
-  }
   inner_product_param {
     num_output: 200
     weight_filler {
@@ -6331,9 +6313,6 @@ layer {
   bottom: "final/res"
   bottom: "label"
   top: "accuracy/top1"
-  include {
-    phase: TEST
-  }
 }
 layer {
   name: "accuracy/top5"
@@ -6341,9 +6320,6 @@ layer {
   bottom: "final/res"
   bottom: "label"
   top: "accuracy/top5"
-  include {
-    phase: TEST
-  }
   accuracy_param {
     top_k: 5
   }

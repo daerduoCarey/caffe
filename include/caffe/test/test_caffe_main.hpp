@@ -70,6 +70,14 @@ class GPUDeviceTest : public MultiDeviceTest<GPUDevice<Dtype> > {
 typedef ::testing::Types<CPUDevice<float>, CPUDevice<double>,
                          GPUDevice<float>, GPUDevice<double> >
                          TestDtypesAndDevices;
+typedef ::testing::Types<GPUDevice<float> >
+                         TestGPUAndFloat;
+typedef ::testing::Types<CPUDevice<float> >
+                         TestCPUAndFloat;
+typedef ::testing::Types<GPUDevice<double> >
+                         TestGPUAndDouble;
+typedef ::testing::Types<CPUDevice<double> >
+                         TestCPUAndDouble;
 
 #endif
 

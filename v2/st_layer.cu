@@ -87,13 +87,8 @@ void SpatialTransformerLayer<Dtype>::Forward_gpu(
 
 	const int nthreads = N * C * output_H_ * output_W_;
 
-	CPUTimer timer;
-	timer.Start();
-
 	SpatialTransformerForwardGPU<Dtype><<<CAFFE_GET_BLOCKS(nthreads),
 	      CAFFE_CUDA_NUM_THREADS>>>(nthreads, N, C, output_H_, output_W_, H, W, input_grid_data, U, V);
-	
-	std::cout << prefix << " Total time: " << timer.MicroSeconds() << std::endl;
 }
 
 template <typename Dtype>
@@ -208,32 +203,21 @@ void SpatialTransformerLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& to
 
 	const int nthreads = N * C * output_H_ * output_W_;
 
-	CPUTimer timer;
-	timer.Start();
 	SpatialTransformerBackwardGPU<Dtype><<<CAFFE_GET_BLOCKS(nthreads),
 			CAFFE_CUDA_NUM_THREADS>>>(nthreads, C, output_H_, output_W_, H, W, input_grid_data,
 					dV, U, dU_tmp_diff, dTheta_tmp_diff);
-	std::cout << prefix << "Computing temp value time: " << timer.MicroSeconds() << std::endl;
 
-	timer.Start();
 	Dtype* all_ones_1_data = all_ones_1->mutable_gpu_data();
 	caffe_gpu_set(all_ones_1->count(), (Dtype)1., all_ones_1_data);
-	std::cout << prefix << "Setting all_ones_1: " << timer.MicroSeconds() << std::endl;
 	
-	timer.Start();
 	caffe_gpu_gemm<Dtype>(CblasNoTrans, CblasNoTrans, bottom[0]->count(), 1, output_H_ * output_W_,
 			(Dtype)1., dU_tmp_diff, all_ones_1_data, (Dtype)0., dU);
-	std::cout << prefix << "Computing dU: " << timer.MicroSeconds() << std::endl;
 	
-	timer.Start();
 	Dtype* all_ones_2_data = all_ones_2->mutable_gpu_data();
 	caffe_gpu_set(all_ones_2->count(), (Dtype)1., all_ones_2_data);
-	std::cout << prefix << "Setting all_ones_2: " << timer.MicroSeconds() << std::endl;
 	
-	timer.Start();
 	caffe_gpu_gemm<Dtype>(CblasNoTrans, CblasNoTrans, bottom[1]->count(), 1, output_H_ * output_W_ * C, 
 			(Dtype)1., dTheta_tmp_diff, all_ones_2_data, (Dtype)0., dTheta);
-	std::cout << prefix << "Computing dTheta: " << timer.MicroSeconds() << std::endl;
 }
 
 INSTANTIATE_LAYER_GPU_FUNCS(SpatialTransformerLayer);

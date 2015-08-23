@@ -9,9 +9,9 @@ namespace caffe {
 
 template <typename Dtype>
 __global__ void SpatialTransformerForwardGPU(const int nthreads, int N, int C,
-		int output_H_, int output_W_, int H, int W, const Dtype* U, 
-		const Dtype* theta, Dtype* V, Dtype* input_grid_data) {
-
+		int output_H_, int output_W_, int H, int W,
+		Dtype* input_grid_data, const Dtype* U, Dtype* V) {
+	
 	CUDA_KERNEL_LOOP(index, nthreads) {
 
 		const int t = index % output_W_;
@@ -19,16 +19,11 @@ __global__ void SpatialTransformerForwardGPU(const int nthreads, int N, int C,
 		const int j = (index / (output_W_ * output_H_)) % C;
 		const int i = index / (output_W_ * output_H_ * C);
 
-	  	const double output_x = s * 2.0 / output_H_ - 1;
-		const double output_y = t * 2.0 / output_W_ - 1;
-		
-		const int theta_offset = i * 6;
-		const double px = theta[theta_offset] * output_x + theta[theta_offset + 1] * output_y + theta[theta_offset + 2];
-		const double py = theta[theta_offset + 3] * output_x + theta[theta_offset + 4] * output_y + theta[theta_offset + 5];
+		Dtype* coordinates = input_grid_data + (output_H_ * output_W_ * 2) * i;
+		const int row_idx = output_W_ * s + t;
 
-		const int input_grid_offset = i * (output_H_ * output_W_) + s * output_W_ + t;
-		input_grid_data[input_grid_offset * 2] = px;
-		input_grid_data[input_grid_offset * 2 + 1] = py;
+	  	const Dtype px = coordinates[row_idx * 2];
+	  	const Dtype py = coordinates[row_idx * 2 + 1];
 
 	  	const int V_offset = i * (C * output_H_ * output_W_) + j * (output_H_ * output_W_)
 	  			+ s * output_W_ + t;
@@ -71,116 +66,99 @@ template <typename Dtype>
 void SpatialTransformerLayer<Dtype>::Forward_gpu(
     const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
 
-	CPUTimer timer;
-	timer.Start();
-	
 	string prefix = "SpatialTransformerLayer::Forward_gpu::\t";
-	
+
 	const Dtype* U = bottom[0]->gpu_data();
 	const Dtype* theta = bottom[1]->gpu_data();
+	const Dtype* output_grid_data = output_grid.gpu_data();
 
+	Dtype* input_grid_data = input_grid.mutable_gpu_data();
 	Dtype* V = top[0]->mutable_gpu_data();
-	Dtype* input_grid_data = input_grid->mutable_gpu_data();
 
+	caffe_gpu_set(input_grid.count(), (Dtype)0, input_grid_data);
 	caffe_gpu_set(top[0]->count(), (Dtype)0, V);
 
-	const int nthreads = N * C * output_H_ * output_W_;
-	
-	SpatialTransformerForwardGPU<Dtype><<<CAFFE_GET_BLOCKS(nthreads),
-	      CAFFE_CUDA_NUM_THREADS>>>(nthreads, N, C, output_H_, output_W_, 
-			      H, W, U, theta, V, input_grid_data);
+	// compute out input_grid_data
+	for(int i = 0; i < N; ++i) {
+		caffe_gpu_gemm<Dtype>(CblasNoTrans, CblasTrans, output_H_ * output_W_, 2, 3, (Dtype)1.,
+				output_grid_data, theta + 6 * i, (Dtype)0.,
+				input_grid_data + (output_H_ * output_W_ * 2) * i);
+	}
 
-	timer.Stop();
-	//std::cout << prefix << "forward time: " << timer.MicroSeconds() << std::endl;
+	const int nthreads = N * C * output_H_ * output_W_;
+
+	SpatialTransformerForwardGPU<Dtype><<<CAFFE_GET_BLOCKS(nthreads),
+	      CAFFE_CUDA_NUM_THREADS>>>(nthreads, N, C, output_H_, output_W_, H, W, input_grid_data, U, V);
 }
 
 template <typename Dtype>
-__global__ void SpatialTransformerBackwardGPU(const int nthreads, int C, 
-		int output_H_, int output_W_, int H, int W, const Dtype* input_grid_data, 
-		const Dtype* dV_array, Dtype* dTheta, Dtype* dU, const Dtype* U_array) {
-
+__global__ void SpatialTransformerBackwardGPU(const int nthreads, int C,
+		int output_H_, int output_W_, int H, int W,
+		const Dtype* input_grid_data, const Dtype* dV_array, const Dtype* U_array,  
+		Dtype* dTheta_tmp_diff) {
+	
 	CUDA_KERNEL_LOOP(index, nthreads) {
 
-		const int i = index;
+		const int t = index % output_W_;
+		const int s = (index / output_W_) % output_H_;
+		const int j = (index / (output_W_ * output_H_)) % C;
+		const int i = index / (output_W_ * output_H_ * C);
 
 		const Dtype* coordinates = input_grid_data + (output_H_ * output_W_ * 2) * i;
 
-		int row_idx; Dtype px, py, dpx, dpy;
+		const int row_idx = output_W_ * s + t;
 
-		for(int s = 0; s < output_H_; ++s)
-			for(int t = 0; t < output_W_; ++t) {
+		const Dtype px = coordinates[row_idx * 2];
+		const Dtype py = coordinates[row_idx * 2 + 1];
+		
+		Dtype delta_dpx = (Dtype)0.;
+		Dtype delta_dpy = (Dtype)0.;
 
-				row_idx = output_W_ * s + t;
+		const Dtype x = (px + 1) / 2 * H;
+		const Dtype y = (py + 1) / 2 * W;
+		const int dV_offset = i * (C * output_H_ * output_W_) + j * (output_H_ * output_W_)
+				+ s * output_W_ + t;
+		const Dtype dV = dV_array[dV_offset];
 
-				px = coordinates[row_idx * 2];
-				py = coordinates[row_idx * 2 + 1];
+		int m, n; 
+		const Dtype* U = U_array + i * (C * H * W) + j * (H * W);
 
-				dpx = dpy = (Dtype)0.;
-				
-				const Dtype x = (px + 1) / 2 * H;
-				const Dtype y = (py + 1) / 2 * W;
-				
-				for(int j = 0; j < C; ++j) {
+		// left-bottom neighbor
+		m = floor(x); n = floor(y); 
+		if(m >= 0 && m < H && n >= 0 && n < W) {
+			delta_dpx -= (1 - (y - n)) * U[m * W + n] * dV * H / 2;
+			delta_dpy -= (1 - (x - m)) * U[m * W + n] * dV * W / 2;
+		}
+		
+		// left-top neighbor
+		m = floor(x); n = floor(y) + 1; 
+		if(m >= 0 && m < H && n >= 0 && n < W) {
+			delta_dpx -= (1 - (n - y)) * U[m * W + n] * dV * H / 2;
+			delta_dpy += (1 - (x - m)) * U[m * W + n] * dV * W / 2;
+		}
 
-					const int dV_offset = i * (C * output_H_ * output_W_) + j * (output_H_ * output_W_)
-							+ s * output_W_ + t;
-					const Dtype dV = dV_array[dV_offset];
-
-					int m, n; Dtype w;
-					const Dtype* U = U_array + i * (C * H * W) + j * (H * W);
-
-					m = floor(x); n = floor(y); w = 0;
-					if(m >= 0 && m < H && n >= 0 && n < W) {
-						w = (1 - (x - m)) * (1 - (y - n));
-
-						int tmp_offset = i * (C * H * W) + j * (H * W);
-						dU[tmp_offset + m * W + n] += w * dV;
-
-						dpx -= (1 - (y - n)) * U[m * W + n] * dV * H / 2;
-						dpy -= (1 - (x - m)) * U[m * W + n] * dV * W / 2;
-					}
-
-					m = floor(x) + 1; n = floor(y); w = 0;
-					if(m >= 0 && m < H && n >= 0 && n < W) {
-						w = (1 - (m - x)) * (1 - (y - n));
-
-						int tmp_offset = i * (C * H * W) + j * (H * W);
-						dU[tmp_offset + m * W + n] += w * dV;
-
-						dpx += (1 - (y - n)) * U[m * W + n] * dV * H / 2;
-						dpy -= (1 - (m - x)) * U[m * W + n] * dV * W / 2;
-					}
-
-					m = floor(x); n = floor(y) + 1; w = 0;
-					if(m >= 0 && m < H && n >= 0 && n < W) {
-						w = (1 - (x - m)) * (1 - (n - y));
-
-						int tmp_offset = i * (C * H * W) + j * (H * W);
-						dU[tmp_offset + m * W + n] += w * dV;
-
-						dpx -= (1 - (n - y)) * U[m * W + n] * dV * H / 2;
-						dpy += (1 - (x - m)) * U[m * W + n] * dV * W / 2;
-					}
-
-					m = floor(x) + 1; n = floor(y) + 1; w = 0;
-					if(m >= 0 && m < H && n >= 0 && n < W) {
-						w = (1 - (m - x)) * (1 - (n - y));
-
-						int tmp_offset = i * (C * H * W) + j * (H * W);
-						dU[tmp_offset + m * W + n] += w * dV;
-
-						dpx += (1 - (n - y)) * U[m * W + n] * dV * H / 2;
-						dpy += (1 - (m - x)) * U[m * W + n] * dV * W / 2;
-					}
-				}
-
-				dTheta[6 * i] += dpx * (s * 1.0 / output_H_ * 2 - 1);
-				dTheta[6 * i + 1] += dpx * (t * 1.0 / output_W_ * 2 - 1);
-				dTheta[6 * i + 2] += dpx;
-				dTheta[6 * i + 3] += dpy * (s * 1.0 / output_H_ * 2 - 1);
-				dTheta[6 * i + 4] += dpy * (t * 1.0 / output_W_ * 2 - 1);
-				dTheta[6 * i + 5] += dpy;
-			}
+		// right-bottom neighbor
+		m = floor(x) + 1; n = floor(y); 
+		if(m >= 0 && m < H && n >= 0 && n < W) {
+			delta_dpx += (1 - (y - n)) * U[m * W + n] * dV * H / 2;
+			delta_dpy -= (1 - (m - x)) * U[m * W + n] * dV * W / 2;
+		}
+		
+		// right-top neighbor
+		m = floor(x) + 1; n = floor(y) + 1; 
+		if(m >= 0 && m < H && n >= 0 && n < W) {
+			delta_dpx += (1 - (n - y)) * U[m * W + n] * dV * H / 2;
+			delta_dpy += (1 - (m - x)) * U[m * W + n] * dV * W / 2;
+		}
+		
+		int idx = j * (output_H_ * output_W_) + s * output_W_ + t;
+		
+		dTheta_tmp_diff[(6 * i) * (output_H_ * output_W_ * C) + idx] += delta_dpx * (s * 1.0 / output_H_ * 2 - 1);
+		dTheta_tmp_diff[(6 * i + 1) * (output_H_ * output_W_ * C) + idx] += delta_dpx * (t * 1.0 / output_W_ * 2 - 1);
+		dTheta_tmp_diff[(6 * i + 2) * (output_H_ * output_W_ * C) + idx] += delta_dpx;
+		dTheta_tmp_diff[(6 * i + 3) * (output_H_ * output_W_ * C) + idx] += delta_dpy * (s * 1.0 / output_H_ * 2 - 1);
+		dTheta_tmp_diff[(6 * i + 4) * (output_H_ * output_W_ * C) + idx] += delta_dpy * (t * 1.0 / output_W_ * 2 - 1);
+		dTheta_tmp_diff[(6 * i + 5) * (output_H_ * output_W_ * C) + idx] += delta_dpy;
 	}
 }
 
@@ -188,29 +166,28 @@ template <typename Dtype>
 void SpatialTransformerLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
     const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom) {
 
-	CPUTimer timer;
-	timer.Start();
-	
-	string prefix = "SpatialTransformerLayer::Backward_gpu::\t";
+	string prefix = "SpatialTransformerLayer::Backward_GPU::\t";
 
 	const Dtype* dV = top[0]->gpu_diff();
+	const Dtype* input_grid_data = input_grid.gpu_data();
 	const Dtype* U = bottom[0]->gpu_data();
-	const Dtype* input_grid_data = input_grid->gpu_data();
 
-	Dtype* dU = bottom[0]->mutable_gpu_diff();
 	Dtype* dTheta = bottom[1]->mutable_gpu_diff();
+	Dtype* dTheta_tmp_diff = dTheta_tmp.mutable_gpu_diff();
 
-	caffe_gpu_set(bottom[0]->count(), (Dtype)0, dU);
-	caffe_gpu_set(bottom[1]->count(), (Dtype)0, dTheta);
+	caffe_gpu_set(dTheta_tmp.count(), (Dtype)0., dTheta_tmp_diff);
 
-	const int nthreads = N;
+	const int nthreads = N * C * output_H_ * output_W_;
 
 	SpatialTransformerBackwardGPU<Dtype><<<CAFFE_GET_BLOCKS(nthreads),
 			CAFFE_CUDA_NUM_THREADS>>>(nthreads, C, output_H_, output_W_, H, W, input_grid_data,
-					dV, dTheta, dU, U);
+					dV, U, dTheta_tmp_diff);
+
+	Dtype* all_ones_2_data = all_ones_2.mutable_gpu_data();
+	caffe_gpu_set(all_ones_2.count(), (Dtype)1., all_ones_2_data);
 	
-	timer.Stop();
-	//std::cout << prefix << "back time: " << timer.MicroSeconds() << std::endl;
+	caffe_gpu_gemm<Dtype>(CblasNoTrans, CblasNoTrans, bottom[1]->count(), 1, output_H_ * output_W_ * C, 
+			(Dtype)1., dTheta_tmp_diff, all_ones_2_data, (Dtype)0., dTheta);
 }
 
 INSTANTIATE_LAYER_GPU_FUNCS(SpatialTransformerLayer);

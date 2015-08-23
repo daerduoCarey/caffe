@@ -39,13 +39,13 @@ def data_unit(net, file_name):
 def main():
 	
 	caffe_root = './'
-	res_root = 'res/'
+	res_root = 'res_st/'
 	
 	tot = 10
 
 	caffe.set_mode_cpu()
 	net = caffe.Net(caffe_root + 'examples/mnist_tests/ST_CNN_RST/ST_CNN.prototxt',
-			caffe_root + 'examples/mnist_tests/ST_CNN_RST/ST_CNN_iter_150000.caffemodel',
+			caffe_root + 'examples/mnist_tests/ST_CNN_RST/ST_CNN_iter_10000.caffemodel',
 			caffe.TEST)
 
 	for i in xrange(tot):

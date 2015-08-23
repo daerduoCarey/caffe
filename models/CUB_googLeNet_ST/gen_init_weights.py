@@ -11,7 +11,7 @@ cub_net = caffe.Net(caffe_root + 'models/CUB_googLeNet_ST/deploy.prototxt',
 		    caffe.TEST)
 
 net_params = net.params.keys()
-prefix_list = ['inc1', 'inc2']
+prefix_list = ['inc1', 'inc2', 'st']
 
 for param in net_params[:-1]:
     for idx, value in enumerate(net.params[param]):
@@ -21,4 +21,4 @@ for param in net_params[:-1]:
             cub_net.params['/'.join([prefix, param])][idx].data[...] = value.data
             
 print 'Saving to protobuf file'
-cub_net.save(caffe_root + 'models/CUB_googLeNet_ST/init2_CUB_googLeNet.caffemodel')
+cub_net.save(caffe_root + 'models/CUB_googLeNet_ST/init_CUB_googLeNet_ST_INC1_INC2.caffemodel')

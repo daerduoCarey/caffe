@@ -71,9 +71,6 @@ template <typename Dtype>
 void SpatialTransformerLayer<Dtype>::Forward_gpu(
     const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
 
-	CPUTimer timer;
-	timer.Start();
-	
 	string prefix = "SpatialTransformerLayer::Forward_gpu::\t";
 	
 	const Dtype* U = bottom[0]->gpu_data();
@@ -89,9 +86,6 @@ void SpatialTransformerLayer<Dtype>::Forward_gpu(
 	SpatialTransformerForwardGPU<Dtype><<<CAFFE_GET_BLOCKS(nthreads),
 	      CAFFE_CUDA_NUM_THREADS>>>(nthreads, N, C, output_H_, output_W_, 
 			      H, W, U, theta, V, input_grid_data);
-
-	timer.Stop();
-	//std::cout << prefix << "forward time: " << timer.MicroSeconds() << std::endl;
 }
 
 template <typename Dtype>
@@ -188,9 +182,6 @@ template <typename Dtype>
 void SpatialTransformerLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
     const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom) {
 
-	CPUTimer timer;
-	timer.Start();
-	
 	string prefix = "SpatialTransformerLayer::Backward_gpu::\t";
 
 	const Dtype* dV = top[0]->gpu_diff();
@@ -208,9 +199,6 @@ void SpatialTransformerLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& to
 	SpatialTransformerBackwardGPU<Dtype><<<CAFFE_GET_BLOCKS(nthreads),
 			CAFFE_CUDA_NUM_THREADS>>>(nthreads, C, output_H_, output_W_, H, W, input_grid_data,
 					dV, dTheta, dU, U);
-	
-	timer.Stop();
-	//std::cout << prefix << "back time: " << timer.MicroSeconds() << std::endl;
 }
 
 INSTANTIATE_LAYER_GPU_FUNCS(SpatialTransformerLayer);

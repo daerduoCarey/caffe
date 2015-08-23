@@ -1,0 +1,15 @@
+net: "models/CUB_googLeNet_one_ST/train_test.prototxt"
+test_iter: 1
+test_interval: 10000
+test_initialization: false
+display: 10
+base_lr: 0.00001
+lr_policy: "step"
+stepsize: 5000
+gamma: 0.96
+max_iter: 20000
+momentum: 0.9
+weight_decay: 0
+snapshot: 1000
+snapshot_prefix: "models/CUB_googLeNet_one_ST/CUB_googLeNet_one_ST"
+solver_mode: GPU
