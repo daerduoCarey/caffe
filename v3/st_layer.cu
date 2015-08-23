@@ -38,25 +38,25 @@ __global__ void SpatialTransformerForwardGPU(const int nthreads, int N, int C,
 
 	  	m = floor(x); n = floor(y); w = 0;
 	  	if(m >= 0 && m < H && n >= 0 && n < W) {
-	  		w = fmax(0, 1 - abs(x - m)) * fmax(0, 1 - abs(y - n));
+	  		w = (1 - (x - m)) * (1 - (y - n));
 	  		V[V_offset] += w * pic[m * W + n];
 	  	}
 
 	  	m = floor(x) + 1; n = floor(y); w = 0;
 	  	if(m >= 0 && m < H && n >= 0 && n < W) {
-	  		w = fmax(0, 1 - abs(m - x)) * fmax(0, 1 - abs(y - n));
+	  		w = (1 - (m - x)) * (1 - (y - n));
 	  		V[V_offset] += w * pic[m * W + n];
 	  	}
 
 	  	m = floor(x); n = floor(y) + 1; w = 0;
 	  	if(m >= 0 && m < H && n >= 0 && n < W) {
-	  		w = fmax(0, 1 - abs(x - m)) * fmax(0, 1 - abs(n - y));
+	  		w = (1 - (x - m)) * (1 - (n - y));
 	  		V[V_offset] += w * pic[m * W + n];
 	  	}
 
 	  	m = floor(x) + 1; n = floor(y) + 1; w = 0;
 	  	if(m >= 0 && m < H && n >= 0 && n < W) {
-	  		w = fmax(0, 1 - abs(m - x)) * fmax(0, 1 - abs(n - y));
+	  		w = (1 - (m - x)) * (1 - (n - y));
 	  		V[V_offset] += w * pic[m * W + n];
 	  	}
   }
@@ -126,29 +126,29 @@ __global__ void SpatialTransformerBackwardGPU(const int nthreads, int C,
 		// left-bottom neighbor
 		m = floor(x); n = floor(y); 
 		if(m >= 0 && m < H && n >= 0 && n < W) {
-			delta_dpx -= fmax(0, 1 - abs(y - n)) * U[m * W + n] * dV * H / 2;
-			delta_dpy -= fmax(0, 1 - abs(x - m)) * U[m * W + n] * dV * W / 2;
+			delta_dpx -= (1 - (y - n)) * U[m * W + n] * dV * H / 2;
+			delta_dpy -= (1 - (x - m)) * U[m * W + n] * dV * W / 2;
 		}
 		
 		// left-top neighbor
 		m = floor(x); n = floor(y) + 1; 
 		if(m >= 0 && m < H && n >= 0 && n < W) {
-			delta_dpx -= fmax(0, 1 - abs(n - y)) * U[m * W + n] * dV * H / 2;
-			delta_dpy += fmax(0, 1 - abs(x - m)) * U[m * W + n] * dV * W / 2;
+			delta_dpx -= (1 - (n - y)) * U[m * W + n] * dV * H / 2;
+			delta_dpy += (1 - (x - m)) * U[m * W + n] * dV * W / 2;
 		}
 
 		// right-bottom neighbor
 		m = floor(x) + 1; n = floor(y); 
 		if(m >= 0 && m < H && n >= 0 && n < W) {
-			delta_dpx += fmax(0, 1 - abs(y - n)) * U[m * W + n] * dV * H / 2;
-			delta_dpy -= fmax(0, 1 - abs(m - x)) * U[m * W + n] * dV * W / 2;
+			delta_dpx += (1 - (y - n)) * U[m * W + n] * dV * H / 2;
+			delta_dpy -= (1 - (m - x)) * U[m * W + n] * dV * W / 2;
 		}
 		
 		// right-top neighbor
 		m = floor(x) + 1; n = floor(y) + 1; 
 		if(m >= 0 && m < H && n >= 0 && n < W) {
-			delta_dpx += fmax(0, 1 - abs(n - y)) * U[m * W + n] * dV * H / 2;
-			delta_dpy += fmax(0, 1 - abs(m - x)) * U[m * W + n] * dV * W / 2;
+			delta_dpx += (1 - (n - y)) * U[m * W + n] * dV * H / 2;
+			delta_dpy += (1 - (m - x)) * U[m * W + n] * dV * W / 2;
 		}
 		
 		int idx = j * (output_H_ * output_W_) + s * output_W_ + t;

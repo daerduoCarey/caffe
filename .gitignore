@@ -1,5 +1,5 @@
 ## General
-
+*.caffemodel.backup
 *.jpg
 
 # Compiled Object files
