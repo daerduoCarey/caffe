@@ -31,10 +31,6 @@ void SpatialTransformerLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bott
 		CHECK(false) << prefix << "Sampler type only supports bilinear now!" << std::endl;
 	}
 
-	if(this->layer_param_.st_param().compute_dU()) {
-		to_compute_dU = true;
-	}
-
 	std::cout<<prefix<<"Getting output_H_ and output_W_"<<std::endl;
 
 	output_H_ = bottom[0]->shape(2);

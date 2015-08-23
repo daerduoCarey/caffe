@@ -19,7 +19,7 @@ class SpatialTransformerLayer : public Layer<Dtype> {
 
 public:
 	explicit SpatialTransformerLayer(const LayerParameter& param)
-      : Layer<Dtype>(param), to_compute_dU(false), global_debug(false) {}
+      : Layer<Dtype>(param), global_debug(false) {}
 	virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 	virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
@@ -60,7 +60,6 @@ private:
 	int N, C, H, W;
 
 	bool global_debug;
-	bool to_compute_dU;
 
 	Blob<Dtype> dTheta_tmp;	// used for back propagation part in GPU implementation
 	Blob<Dtype> all_ones_2;	// used for back propagation part in GPU implementation

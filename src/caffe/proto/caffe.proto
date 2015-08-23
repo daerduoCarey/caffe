@@ -287,6 +287,9 @@ message SpatialTransformerParameter {
 	// If not set,stay same with the input dimension H and W
 	optional int32 output_H = 3;
 	optional int32 output_W = 4;
+	
+	// If false, only compute dTheta, DO NOT compute dU
+	optional bool to_compute_dU = 5 [default = true];
 }
 
 // Specifies training parameters (multipliers on global learning constants,
