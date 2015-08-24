@@ -2153,6 +2153,9 @@ layer {
   bottom: "data"
   bottom: "st/theta_1"
   top: "inc1/data"
+  st_param {
+    to_compute_dU: false
+  }
 }
 layer {
   name: "st/theta_2"
@@ -2176,6 +2179,9 @@ layer {
   bottom: "data"
   bottom: "st/theta_2"
   top: "inc2/data"
+  st_param {
+    to_compute_dU: false
+  }
 }
 layer {
   name: "inc1/conv1/7x7_s2"

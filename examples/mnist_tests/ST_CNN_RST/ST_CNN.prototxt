@@ -145,6 +145,9 @@ layer {
   bottom: "data"
   bottom: "theta"
   top: "st_output"
+  st_param {
+    to_compute_dU: false
+  }
 }
 layer {
   name: "conv1"

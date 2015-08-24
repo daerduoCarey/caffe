@@ -26,14 +26,14 @@ class SpatialTransformerLayerTest : public MultiDeviceTest<TypeParam> {
  protected:
   SpatialTransformerLayerTest() {
 
-	  std::ifstream fin("image_input.txt");
+	  std::ifstream fin("test_input.txt");
 
 	  blob_U_ = new Blob<Dtype>();
 	  blob_V_ = new Blob<Dtype>();
 	  blob_theta_ = new Blob<Dtype>();
 
-	  blob_U_->Reshape(1, 1, 12, 12);
-	  blob_V_->Reshape(1, 1, 12, 12);
+	  blob_U_->Reshape(1, 1, 5, 5);
+	  blob_V_->Reshape(1, 1, 5, 5);
 	  vector<int> theta_shape(3);
 	  theta_shape[0] = 1; theta_shape[1] = 2; theta_shape[2] = 3;
 	  blob_theta_->Reshape(theta_shape);
@@ -41,10 +41,10 @@ class SpatialTransformerLayerTest : public MultiDeviceTest<TypeParam> {
 	  Dtype tmp;
 
 	  Dtype* U = blob_U_->mutable_cpu_data();
-	  for(int i=0; i<12; ++i)
-		  for(int j=0; j<12; ++j) {
+	  for(int i=0; i<5; ++i)
+		  for(int j=0; j<5; ++j) {
 			  fin >> tmp;
-			  U[12*i+j] = tmp;
+			  U[5*i+j] = tmp;
 		  }
 
 	  Dtype* theta = blob_theta_->mutable_cpu_data();
@@ -97,9 +97,9 @@ TYPED_TEST(SpatialTransformerLayerTest, TestForwardAndBackward) {
     layer->SetUp(this->blob_bottom_vec_, this->blob_top_vec_);
 
     std::cout << "blob_U_->data:" << std::endl;
-    for(int i=0; i<12; ++i) {
-    	for(int j=0; j<12; ++j)
-    		std::cout << this->blob_U_->cpu_data()[12*i+j] << "\t";
+    for(int i=0; i<5; ++i) {
+    	for(int j=0; j<5; ++j)
+    		std::cout << this->blob_U_->cpu_data()[5*i+j] << "\t";
     	std::cout << std::endl;
     }
 
@@ -113,9 +113,9 @@ TYPED_TEST(SpatialTransformerLayerTest, TestForwardAndBackward) {
     layer->Forward(this->blob_bottom_vec_, this->blob_top_vec_);
 
     std::cout << "blob_V_->data:" << std::endl;
-    for(int i=0; i<12; ++i) {
-    	for(int j=0; j<12; ++j)
-    		std::cout << this->blob_V_->cpu_data()[12*i+j] << "\t";
+    for(int i=0; i<5; ++i) {
+    	for(int j=0; j<5; ++j)
+    		std::cout << this->blob_V_->cpu_data()[5*i+j] << "\t";
     	std::cout << std::endl;
     }
 
@@ -123,13 +123,13 @@ TYPED_TEST(SpatialTransformerLayerTest, TestForwardAndBackward) {
     std::cout << std::endl << "Give loss and Backward" << std::endl << std::endl;
 
     Dtype* diff = this->blob_V_->mutable_cpu_diff();
-    for(int i=0; i<this->blob_V_->count(); ++i) diff[i] = 0.0;
-    diff[this->blob_V_->offset(0, 0, 5, 0)] = 2.0;
+    const Dtype* data = this->blob_V_->cpu_data();
+    for(int i=0; i<this->blob_V_->count(); ++i) diff[i] = data[i];
 
     std::cout << "blob_V_->diff:" << std::endl;
-    for(int i=0; i<12; ++i) {
-    	for(int j=0; j<12; ++j)
-    		std::cout << this->blob_V_->cpu_diff()[12*i+j] << "\t";
+    for(int i=0; i<5; ++i) {
+    	for(int j=0; j<5; ++j)
+    		std::cout << this->blob_V_->cpu_diff()[5*i+j] << "\t";
     	std::cout << std::endl;
     }
 
@@ -143,9 +143,9 @@ TYPED_TEST(SpatialTransformerLayerTest, TestForwardAndBackward) {
     }
 
     std::cout << "blob_U_->diff:" << std::endl;
-    for(int i=0; i<12; ++i) {
-    	for(int j=0; j<12; ++j)
-    		std::cout << this->blob_U_->cpu_diff()[12*i+j] << "\t";
+    for(int i=0; i<5; ++i) {
+    	for(int j=0; j<5; ++j)
+    		std::cout << this->blob_U_->cpu_diff()[5*i+j] << "\t";
     	std::cout << std::endl;
     }
 

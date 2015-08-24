@@ -90,7 +90,7 @@ void GradientChecker<Dtype>::CheckGradientSingle(Layer<Dtype>* layer,
     blobs_to_check.push_back(blob);
   }
   if (check_bottom < 0) {
-    for (int i = 1; i < bottom.size(); ++i) {
+    for (int i = 0; i < bottom.size(); ++i) {
       blobs_to_check.push_back(bottom[i]);
     }
   } else {
