@@ -8,7 +8,6 @@ Setup and Forward
 
 		Spatial Transformer Layer:: LayerSetUp: 	Getting output_H_ and output_W_
 		Spatial Transformer Layer:: LayerSetUp: 	output_H_ = 5, output_W_ = 5
-		Spatial Transformer Layer:: LayerSetUp: 	Reshaping theta
 		Spatial Transformer Layer:: LayerSetUp: 	Initializing the matrix for output grid
 		Spatial Transformer Layer:: LayerSetUp: 	Initializing the matrix for input grid
 		Spatial Transformer Layer:: LayerSetUp: 	Initialization finished.
@@ -45,17 +44,16 @@ blob_U_->diff:
 0	0.585174	0.766128	0.213948	0.0246341	
 0	0.343758	1.43272	1.00858	0.533942	
 0	0.0101253	0.758324	1.92316	1.47535	
-[       OK ] SpatialTransformerLayerTest/0.TestForwardAndBackward (391 ms)
+[       OK ] SpatialTransformerLayerTest/0.TestForwardAndBackward (370 ms)
 [ RUN      ] SpatialTransformerLayerTest/0.TestGradient
 		Spatial Transformer Layer:: LayerSetUp: 	Getting output_H_ and output_W_
 		Spatial Transformer Layer:: LayerSetUp: 	output_H_ = 5, output_W_ = 5
-		Spatial Transformer Layer:: LayerSetUp: 	Reshaping theta
 		Spatial Transformer Layer:: LayerSetUp: 	Initializing the matrix for output grid
 		Spatial Transformer Layer:: LayerSetUp: 	Initializing the matrix for input grid
 		Spatial Transformer Layer:: LayerSetUp: 	Initialization finished.
-[       OK ] SpatialTransformerLayerTest/0.TestGradient (106 ms)
-[----------] 2 tests from SpatialTransformerLayerTest/0 (497 ms total)
+[       OK ] SpatialTransformerLayerTest/0.TestGradient (88 ms)
+[----------] 2 tests from SpatialTransformerLayerTest/0 (458 ms total)
 
 [----------] Global test environment tear-down
-[==========] 2 tests from 1 test case ran. (497 ms total)
+[==========] 2 tests from 1 test case ran. (458 ms total)
 [  PASSED  ] 2 tests.
