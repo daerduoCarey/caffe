@@ -52,14 +52,6 @@ void SpatialTransformerLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bott
 	CHECK(bottom[1]->count(1) == 6) << "The dimension of theta is not six!" << std::endl;
 	CHECK(bottom[1]->shape(0) == bottom[0]->shape(0)) << "The first dimension of theta and U should be the same" << std::endl;
 
-	std::cout<<prefix<<"Reshaping theta"<<std::endl;
-
-	vector<int> shape_theta(3);
-	shape_theta[0] = bottom[1]->shape(0);
-	shape_theta[1] = 2; shape_theta[2] = 3;
-
-	bottom[1]->Reshape(shape_theta);
-
 	// initialize the matrix for output grid
 	std::cout<<prefix<<"Initializing the matrix for output grid"<<std::endl;
 

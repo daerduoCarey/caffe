@@ -292,6 +292,13 @@ message SpatialTransformerParameter {
 	optional bool to_compute_dU = 5 [default = true];
 }
 
+// added by Kaichun Mo
+message MaskTransformerParameter {
+	
+	// If false, only compute dmm, DO NOT compute dU
+	optional bool to_compute_dU = 1 [default = true];
+}
+
 // Specifies training parameters (multipliers on global learning constants,
 // and the name and other settings used for weight sharing).
 message ParamSpec {
@@ -405,6 +412,7 @@ message LayerParameter {
 
   // added by Kaichun Mo
   optional SpatialTransformerParameter st_param = 137;
+  optional MaskTransformerParameter mask_param = 138;
 }
 
 // Message that stores parameters used to apply transformation
