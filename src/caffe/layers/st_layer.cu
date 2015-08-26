@@ -25,8 +25,7 @@ __global__ void SpatialTransformerForwardGPU(const int nthreads, int N, int C,
 	  	const Dtype px = coordinates[row_idx * 2];
 	  	const Dtype py = coordinates[row_idx * 2 + 1];
 
-	  	const int V_offset = i * (C * output_H_ * output_W_) + j * (output_H_ * output_W_)
-	  			+ s * output_W_ + t;
+	  	const int V_offset = index;
 
 	  	V[V_offset] = (Dtype)0.;
 
@@ -116,8 +115,7 @@ __global__ void SpatialTransformerBackwardGPU_dTheta(const int nthreads, int C,
 
 		const Dtype x = (px + 1) / 2 * H;
 		const Dtype y = (py + 1) / 2 * W;
-		const int dV_offset = i * (C * output_H_ * output_W_) + j * (output_H_ * output_W_)
-				+ s * output_W_ + t;
+		const int dV_offset = index;
 		const Dtype dV = dV_array[dV_offset];
 
 		int m, n; 
@@ -169,33 +167,48 @@ __global__ void SpatialTransformerBackwardGPU_dU(const int nthreads, const int C
 	
 	CUDA_KERNEL_LOOP(index, nthreads) {
 
-		const int t = index % W;
-		const int s = (index / W) % H;
-		const int j = (index / (W * H)) % C;
-		const int i = index / (W * H * C);
+		const int t = index % output_W_;
+		const int s = (index / output_W_) % output_H_;
+		const int j = (index / (output_W_ * output_H_)) % C;
+		const int i = index / (output_W_ * output_H_ * C);
 
-		const Dtype* coordinates = input_grid_data + (output_H_ * output_W_ * 2) * i;
+		Dtype* coordinates = input_grid_data + (output_H_ * output_W_ * 2) * i;
+		const int row_idx = output_W_ * s + t;
 
-		Dtype px, py, w, x, y; 
-		int row_idx, dV_offset, p, q;
+	  	const Dtype px = coordinates[row_idx * 2];
+	  	const Dtype py = coordinates[row_idx * 2 + 1];
 
-		for(int iter = 0; iter < output_H_ * output_W_; ++iter) {
-		
-			p = iter / output_W_;
-			q = iter % output_W_;
+	  	const int V_offset = index;
 
-			row_idx = p * output_W_ + q;
-			px = coordinates[row_idx * 2];
-			py = coordinates[row_idx * 2 + 1];
-			x = (px + 1) / 2 * H;
-			y = (py + 1) / 2 * W;
-				
-			if(abs(x - s) < 1 && abs(y - t) < 1) {
-				w = (1 - abs(x - s)) * (1 - abs(y - t));
-				dV_offset = i * (C*output_H_*output_W_) + j * (output_H_*output_W_) + p * output_W_ + q;
-				dU[index] += w * dV[dV_offset];
-			}
-		}
+	  	const Dtype x = (px + 1) / 2 * H;
+	  	const Dtype y = (py + 1) / 2 * W;
+
+	  	int m, n; Dtype w;
+	  	const Dtype* pic = dU + i * (C * H * W) + j * (H * W);
+
+	  	m = floor(x); n = floor(y); w = 0;
+	  	if(m >= 0 && m < H && n >= 0 && n < W) {
+	  		w = (1 - (x - m)) * (1 - (y - n));
+	  		atomicAdd(pic + (m * W + n), w * dV[V_offset]);
+	  	}
+
+	  	m = floor(x) + 1; n = floor(y); w = 0;
+	  	if(m >= 0 && m < H && n >= 0 && n < W) {
+	  		w = (1 - (m - x)) * (1 - (y - n));
+	  		atomicAdd(pic + (m * W + n), w * dV[V_offset]);
+	  	}
+
+	  	m = floor(x); n = floor(y) + 1; w = 0;
+	  	if(m >= 0 && m < H && n >= 0 && n < W) {
+	  		w = (1 - (x - m)) * (1 - (n - y));
+	  		atomicAdd(pic + (m * W + n), w * dV[V_offset]);
+	  	}
+
+	  	m = floor(x) + 1; n = floor(y) + 1; w = 0;
+	  	if(m >= 0 && m < H && n >= 0 && n < W) {
+	  		w = (1 - (m - x)) * (1 - (n - y));
+	  		atomicAdd(pic + (m * W + n), w * dV[V_offset]);
+	  	}
 	}
 }
 
@@ -229,7 +242,7 @@ void SpatialTransformerLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& to
 	if(to_compute_dU_) {
 		Dtype* dU = bottom[0]->mutable_gpu_diff();
 		caffe_gpu_set(bottom[0]->count(), (Dtype)0., dU);
-		const int nthreads = N * C * H * W;
+		const int nthreads = N * C * output_H_ * output_W_;
 		SpatialTransformerBackwardGPU_dU<Dtype><<<CAFFE_GET_BLOCKS(nthreads),
 			CAFFE_CUDA_NUM_THREADS>>>(nthreads, C, W, H, output_H_, output_W_, input_grid_data, dV, dU);
 	}
